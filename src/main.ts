@@ -12,7 +12,7 @@ import { posEqual, getAutoTargetPreview, getBlastPositions, getScanPositions } f
 import { moveAction, healAction, skipAction } from './models/action';
 import { getWeapon } from './data/weapons-db';
 import { CONFIG } from './config';
-import { PLAYER_PRESETS, ENEMY_PRESETS, MEDABOTS } from './data/medabots-db';
+import { ALL_PRESETS, MEDABOTS } from './data/medabots-db';
 import { pick } from './utils/random';
 
 // ── helpers ──
@@ -38,7 +38,6 @@ let previewAction: import('./models/types').BattleAction | null = null;
 let previewCells: Position[] = [];
 let previewType: 'attack' | 'scan' = 'attack';
 let selectedPlayerPreset = 0;
-let selectedEnemyPreset = -1;
 let aiRunning = false;
 
 // pick3 用
@@ -110,10 +109,9 @@ function startBattle(): void {
   document.getElementById('result-overlay')!.classList.remove('active');
   messageLog.clear();
 
-  const playerTeam = PLAYER_PRESETS[selectedPlayerPreset].team;
-  const enemyTeam = selectedEnemyPreset >= 0
-    ? ENEMY_PRESETS[selectedEnemyPreset].team
-    : pick(ENEMY_PRESETS).team;
+  const playerTeam = ALL_PRESETS[selectedPlayerPreset].team;
+  const remaining = ALL_PRESETS.filter((_, i) => i !== selectedPlayerPreset);
+  const enemyTeam = pick(remaining).team;
 
   state.init(playerTeam, enemyTeam);
   pendingAction = null;
@@ -667,13 +665,13 @@ function buildTeamSelectUI(): void {
 
   const playerGroup = document.createElement('div');
   playerGroup.className = 'select-group';
-  playerGroup.innerHTML = '<div class="select-label">▼ 自軍チーム</div>';
+  playerGroup.innerHTML = '<div class="select-label">▼ チーム選択</div>';
   const playerList = document.createElement('div');
   playerList.className = 'preset-list';
   const playerDetail = document.createElement('div');
   playerDetail.className = 'preset-detail';
 
-  PLAYER_PRESETS.forEach((preset, i) => {
+  ALL_PRESETS.forEach((preset, i) => {
     const btn = document.createElement('button');
     btn.className = 'preset-btn' + (i === selectedPlayerPreset ? ' selected' : '');
     btn.textContent = preset.name;
@@ -686,48 +684,16 @@ function buildTeamSelectUI(): void {
     playerList.appendChild(btn);
   });
 
-  playerDetail.textContent = PLAYER_PRESETS[0].team.map(id => MEDABOTS[id]?.name ?? id).join(' / ');
+  playerDetail.textContent = ALL_PRESETS[0].team.map(id => MEDABOTS[id]?.name ?? id).join(' / ');
   playerGroup.appendChild(playerList);
   playerGroup.appendChild(playerDetail);
 
-  const enemyGroup = document.createElement('div');
-  enemyGroup.className = 'select-group';
-  enemyGroup.innerHTML = '<div class="select-label">▼ 敵軍チーム</div>';
-  const enemyList = document.createElement('div');
-  enemyList.className = 'preset-list';
-  const enemyDetail = document.createElement('div');
-  enemyDetail.className = 'preset-detail';
-
-  const randBtn = document.createElement('button');
-  randBtn.className = 'preset-btn selected';
-  randBtn.textContent = 'ランダム';
-  randBtn.addEventListener('click', () => {
-    selectedEnemyPreset = -1;
-    enemyList.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('selected'));
-    randBtn.classList.add('selected');
-    enemyDetail.textContent = '???';
-  });
-  enemyList.appendChild(randBtn);
-
-  ENEMY_PRESETS.forEach((preset, i) => {
-    const btn = document.createElement('button');
-    btn.className = 'preset-btn';
-    btn.textContent = preset.name;
-    btn.addEventListener('click', () => {
-      selectedEnemyPreset = i;
-      enemyList.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      enemyDetail.textContent = preset.team.map(id => MEDABOTS[id]?.name ?? id).join(' / ');
-    });
-    enemyList.appendChild(btn);
-  });
-
-  enemyDetail.textContent = '???';
-  enemyGroup.appendChild(enemyList);
-  enemyGroup.appendChild(enemyDetail);
+  const enemyNote = document.createElement('div');
+  enemyNote.className = 'preset-detail';
+  enemyNote.textContent = '※ 敵軍は残りのチームからランダムで選出';
+  playerGroup.appendChild(enemyNote);
 
   container.appendChild(playerGroup);
-  container.appendChild(enemyGroup);
 }
 
 function initLogResize(): void {

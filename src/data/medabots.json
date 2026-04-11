@@ -78,23 +78,25 @@
       "name": "スピード殲滅",
       "description": "ペッパーキャット・フェニックス・スナイパー",
       "team": ["peppercat", "phoenix", "sniper"]
-    }
-  ],
-  "enemyPresets": [
+    },
     {
       "name": "ロボロボ団",
+      "description": "ダーククイーン・スミロドナッド・ブラックラム",
       "team": ["darkqueen", "smilodonnad", "blackram"]
     },
     {
       "name": "セレクト隊",
+      "description": "ゴッドエンペラー・ウォーバニット・スナイパー",
       "team": ["godemperor", "warbanit", "sniper"]
     },
     {
       "name": "スクリューズ",
+      "description": "ペッパーキャット・ベルゼルガ・ダーククイーン",
       "team": ["peppercat", "belzelga", "darkqueen"]
     },
     {
       "name": "ダークロボトル",
+      "description": "ブラックメイル・ゴッドエンペラー・ダーククイーン",
       "team": ["blackmail", "godemperor", "darkqueen"]
     }
   ]

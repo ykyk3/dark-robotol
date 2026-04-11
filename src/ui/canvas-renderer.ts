@@ -30,12 +30,8 @@ export class CanvasRenderer {
   }
 
   resize(): void {
-    const w = CONFIG.GRID_COLS * this.cellSize;
-    const h = CONFIG.GRID_ROWS * this.cellSize;
-    this.canvas.width = w;
-    this.canvas.height = h;
-    this.canvas.style.width = `${w}px`;
-    this.canvas.style.height = `${h}px`;
+    this.canvas.width = CONFIG.GRID_COLS * this.cellSize;
+    this.canvas.height = CONFIG.GRID_ROWS * this.cellSize;
   }
 
   render(state: BattleState): void {

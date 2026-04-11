@@ -9,9 +9,8 @@ export interface TeamPreset {
   team: string[];
 }
 
-export const PLAYER_PRESETS: TeamPreset[] = data.presets as TeamPreset[];
-export const ENEMY_PRESETS: TeamPreset[] = data.enemyPresets as TeamPreset[];
+export const ALL_PRESETS: TeamPreset[] = data.presets as TeamPreset[];
 
 // デフォルト（最初のプリセット）
-export const DEFAULT_PLAYER_TEAM: string[] = PLAYER_PRESETS[0].team;
-export const DEFAULT_ENEMY_TEAM: string[] = ENEMY_PRESETS[0].team;
+export const DEFAULT_PLAYER_TEAM: string[] = ALL_PRESETS[0].team;
+export const DEFAULT_ENEMY_TEAM: string[] = ALL_PRESETS[1].team;
