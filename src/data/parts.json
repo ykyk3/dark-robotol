@@ -1,0 +1,228 @@
+{
+  "head_missile": {
+    "id": "head_missile", "name": "ミサイル", "slot": "head",
+    "actionType": "こうげき", "weaponType": "missile", "attackPower": 38, "accuracy": 70,
+    "headUses": 2, "defense": 4, "description": "十字範囲の爆発攻撃"
+  },
+  "head_radar": {
+    "id": "head_radar", "name": "レーダー", "slot": "head",
+    "actionType": "たすける", "assistType": "scan", "scanRange": 3, "scanType": "cross",
+    "headUses": 3, "defense": 5, "description": "十字3マスの索敵"
+  },
+  "head_scope": {
+    "id": "head_scope", "name": "スコープ", "slot": "head",
+    "actionType": "たすける", "assistType": "scan", "scanRange": 5, "scanType": "line",
+    "headUses": 3, "defense": 3, "description": "直線5マスの長距離索敵"
+  },
+  "head_stealth": {
+    "id": "head_stealth", "name": "ステルス", "slot": "head",
+    "actionType": "たすける", "assistType": "conceal", "concealTurns": 2,
+    "headUses": 2, "defense": 5, "description": "2ターン隠蔽"
+  },
+  "head_cheer": {
+    "id": "head_cheer", "name": "おうえん", "slot": "head",
+    "actionType": "たすける", "assistType": "doubleAction",
+    "headUses": 2, "defense": 4, "description": "次の味方が2連続行動可能"
+  },
+  "head_barrier": {
+    "id": "head_barrier", "name": "バリア", "slot": "head",
+    "actionType": "たすける", "assistType": "disarm", "disarmTurns": 1,
+    "headUses": 2, "defense": 7, "description": "射撃ダメージを1に軽減"
+  },
+  "head_jamming": {
+    "id": "head_jamming", "name": "ジャミング", "slot": "head",
+    "actionType": "たすける", "assistType": "jamming",
+    "headUses": 2, "defense": 5, "description": "敵の前ターン行動を封印"
+  },
+  "head_beam": {
+    "id": "head_beam", "name": "ビームホーン", "slot": "head",
+    "actionType": "こうげき", "weaponType": "beam", "attackPower": 45, "accuracy": 85,
+    "headUses": 1, "defense": 3, "description": "高威力ビーム1発"
+  },
+  "head_trap": {
+    "id": "head_trap", "name": "トラップヘッド", "slot": "head",
+    "actionType": "しかける", "weaponType": "trap_shoot", "trapPower": 35,
+    "headUses": 2, "defense": 5, "description": "トラップ設置"
+  },
+  "head_gravity": {
+    "id": "head_gravity", "name": "デスブレイク", "slot": "head",
+    "actionType": "こうげき", "weaponType": "break", "attackPower": 50, "accuracy": 75,
+    "headUses": 1, "defense": 6, "description": "指定1ヶ所+隣接4ヶ所。高装甲特効"
+  },
+  "head_hyperbeam": {
+    "id": "head_hyperbeam", "name": "プロミネンス", "slot": "head",
+    "actionType": "こうげき", "weaponType": "beam", "attackPower": 70, "accuracy": 80,
+    "headUses": 1, "defense": 3, "description": "超高威力ビーム。同軸上"
+  },
+  "head_widescan": {
+    "id": "head_widescan", "name": "ワイドセンサー", "slot": "head",
+    "actionType": "たすける", "assistType": "scan", "scanRange": 2, "scanType": "area",
+    "headUses": 4, "defense": 6, "description": "全方位2マスの索敵。回数多"
+  },
+
+  "rarm_rifle": {
+    "id": "rarm_rifle", "name": "リボルバー", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "rifle", "attackPower": 35, "accuracy": 80,
+    "defense": 4, "description": "標準的な射撃"
+  },
+  "rarm_sniper": {
+    "id": "rarm_sniper", "name": "スナイパー", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "rifle", "attackPower": 40, "accuracy": 90,
+    "defense": 3, "description": "高命中の狙撃"
+  },
+  "rarm_gatling": {
+    "id": "rarm_gatling", "name": "ガトリング", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "gatling", "attackPower": 15, "accuracy": 85,
+    "defense": 5, "description": "3回乱撃"
+  },
+  "rarm_missile": {
+    "id": "rarm_missile", "name": "ミサイルランチャー", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "missile", "attackPower": 40, "accuracy": 70,
+    "defense": 3, "description": "十字範囲の爆発攻撃"
+  },
+  "rarm_laser": {
+    "id": "rarm_laser", "name": "レーザー", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "laser", "attackPower": 45, "accuracy": 75,
+    "defense": 3, "description": "高威力射撃"
+  },
+  "rarm_break": {
+    "id": "rarm_break", "name": "ブレイクキャノン", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "break", "attackPower": 30, "accuracy": 75,
+    "defense": 4, "description": "高装甲特効"
+  },
+  "rarm_napalm": {
+    "id": "rarm_napalm", "name": "ナパームガン", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "missile", "attackPower": 25, "accuracy": 65,
+    "defense": 4, "description": "同ライン上に攻撃"
+  },
+  "rarm_sword": {
+    "id": "rarm_sword", "name": "ソード", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "sword", "attackPower": 50, "accuracy": 90,
+    "defense": 6, "description": "高威力格闘"
+  },
+  "rarm_hammer": {
+    "id": "rarm_hammer", "name": "ハンマー", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "hammer", "attackPower": 60, "accuracy": 70,
+    "defense": 8, "description": "高威力の単体格闘"
+  },
+  "rarm_pile": {
+    "id": "rarm_pile", "name": "パイルバンカー", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "sword", "attackPower": 55, "accuracy": 80,
+    "defense": 5, "description": "前方4ラインの前列"
+  },
+  "rarm_claw": {
+    "id": "rarm_claw", "name": "クロー", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "sword", "attackPower": 18, "accuracy": 85,
+    "defense": 4, "description": "前方4ラインの前列"
+  },
+  "rarm_deathmissile": {
+    "id": "rarm_deathmissile", "name": "デスミサイル", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "missile", "attackPower": 55, "accuracy": 80,
+    "defense": 5, "description": "超威力ミサイル"
+  },
+  "rarm_powerrifle": {
+    "id": "rarm_powerrifle", "name": "イグニッション", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "rifle", "attackPower": 48, "accuracy": 82,
+    "defense": 4, "description": "パワーライフル。高威力射撃"
+  },
+  "rarm_thunder": {
+    "id": "rarm_thunder", "name": "サンダー", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "thunder", "attackPower": 22, "accuracy": 80,
+    "defense": 4, "description": "電撃2連射"
+  },
+  "rarm_flexsword": {
+    "id": "rarm_flexsword", "name": "フレクサーソード", "slot": "rightArm",
+    "actionType": "こうげき", "weaponType": "sword", "attackPower": 52, "accuracy": 88,
+    "defense": 5, "description": "鋭い斬撃"
+  },
+
+  "larm_submg": {
+    "id": "larm_submg", "name": "サブマシンガン", "slot": "leftArm",
+    "actionType": "こうげき", "weaponType": "gatling", "attackPower": 12, "accuracy": 85,
+    "defense": 3, "description": "3連射のサブ射撃"
+  },
+  "larm_shield": {
+    "id": "larm_shield", "name": "シールド", "slot": "leftArm",
+    "actionType": "まもる", "guardDefenseBonus": 30,
+    "defense": 12, "description": "防御+30"
+  },
+  "larm_repair": {
+    "id": "larm_repair", "name": "リペア", "slot": "leftArm",
+    "actionType": "なおす", "healAmount": 25,
+    "defense": 4, "description": "味方1体HP25回復"
+  },
+  "larm_trap": {
+    "id": "larm_trap", "name": "トラップ", "slot": "leftArm",
+    "actionType": "しかける", "weaponType": "trap_shoot", "trapPower": 45,
+    "defense": 3, "description": "トラップ設置"
+  },
+  "larm_hammer": {
+    "id": "larm_hammer", "name": "ハンマー", "slot": "leftArm",
+    "actionType": "こうげき", "weaponType": "hammer", "attackPower": 45, "accuracy": 65,
+    "defense": 7, "description": "高威力の単体格闘"
+  },
+  "larm_knife": {
+    "id": "larm_knife", "name": "ナイフ", "slot": "leftArm",
+    "actionType": "こうげき", "weaponType": "sword", "attackPower": 30, "accuracy": 90,
+    "defense": 4, "description": "サブ格闘"
+  },
+  "larm_beam": {
+    "id": "larm_beam", "name": "ビームガン", "slot": "leftArm",
+    "actionType": "こうげき", "weaponType": "beam", "attackPower": 25, "accuracy": 75,
+    "defense": 3, "description": "サブ射撃"
+  },
+  "larm_deathlaser": {
+    "id": "larm_deathlaser", "name": "デスレーザー", "slot": "leftArm",
+    "actionType": "こうげき", "weaponType": "laser", "attackPower": 50, "accuracy": 80,
+    "defense": 4, "description": "超威力レーザー"
+  },
+  "larm_megagatling": {
+    "id": "larm_megagatling", "name": "エクスプロード", "slot": "leftArm",
+    "actionType": "こうげき", "weaponType": "gatling", "attackPower": 20, "accuracy": 80,
+    "defense": 4, "description": "メガガトリング。3連射高威力"
+  },
+  "larm_rangeshot": {
+    "id": "larm_rangeshot", "name": "レンジシューター", "slot": "leftArm",
+    "actionType": "こうげき", "weaponType": "gatling", "attackPower": 14, "accuracy": 82,
+    "defense": 3, "description": "3連射"
+  },
+  "larm_strawhammer": {
+    "id": "larm_strawhammer", "name": "ストローハンマー", "slot": "leftArm",
+    "actionType": "こうげき", "weaponType": "hammer", "attackPower": 48, "accuracy": 68,
+    "defense": 6, "description": "高威力の単体格闘"
+  },
+  "larm_thunder": {
+    "id": "larm_thunder", "name": "サンダー", "slot": "leftArm",
+    "actionType": "こうげき", "weaponType": "thunder", "attackPower": 20, "accuracy": 80,
+    "defense": 4, "description": "電撃2連射"
+  },
+
+  "legs_bipedal": {
+    "id": "legs_bipedal", "name": "バイペダル", "slot": "legs",
+    "legType": "bipedal", "moveRange": 3, "evasion": 15, "defense": 6, "description": "バランス型"
+  },
+  "legs_hover": {
+    "id": "legs_hover", "name": "ホバー", "slot": "legs",
+    "legType": "hover", "moveRange": 4, "evasion": 25, "defense": 3, "description": "高速・高回避"
+  },
+  "legs_tank": {
+    "id": "legs_tank", "name": "タンク", "slot": "legs",
+    "legType": "tank", "moveRange": 2, "evasion": 5, "defense": 12, "description": "鈍足・高装甲"
+  },
+  "legs_multi": {
+    "id": "legs_multi", "name": "マルチレッグ", "slot": "legs",
+    "legType": "multiLeg", "moveRange": 3, "evasion": 20, "defense": 8, "description": "多脚型"
+  },
+  "legs_flight": {
+    "id": "legs_flight", "name": "フライト", "slot": "legs",
+    "legType": "flight", "moveRange": 4, "evasion": 30, "defense": 2, "description": "最高回避"
+  },
+  "legs_vehicle": {
+    "id": "legs_vehicle", "name": "タイヤ", "slot": "legs",
+    "legType": "vehicle", "moveRange": 5, "evasion": 15, "defense": 5, "description": "最速移動"
+  },
+  "legs_deathcrawler": {
+    "id": "legs_deathcrawler", "name": "デスクローラー", "slot": "legs",
+    "legType": "multiLeg", "moveRange": 3, "evasion": 10, "defense": 14, "description": "最高装甲の多脚"
+  }
+}

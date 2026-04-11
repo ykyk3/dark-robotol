@@ -1,0 +1,101 @@
+{
+  "medabots": {
+    "metabee": {
+      "id": "metabee", "name": "メタビー", "hp": 120,
+      "head": "head_missile", "rightArm": "rarm_rifle", "leftArm": "larm_submg", "legs": "legs_bipedal"
+    },
+    "rokusho": {
+      "id": "rokusho", "name": "ロクショウ", "hp": 110,
+      "head": "head_radar", "rightArm": "rarm_sword", "leftArm": "larm_hammer", "legs": "legs_bipedal"
+    },
+    "arcbeetle": {
+      "id": "arcbeetle", "name": "アークビートル", "hp": 100,
+      "head": "head_hyperbeam", "rightArm": "rarm_powerrifle", "leftArm": "larm_megagatling", "legs": "legs_bipedal"
+    },
+    "godemperor": {
+      "id": "godemperor", "name": "ゴッドエンペラー", "hp": 160,
+      "head": "head_gravity", "rightArm": "rarm_deathmissile", "leftArm": "larm_deathlaser", "legs": "legs_deathcrawler"
+    },
+    "smilodonnad": {
+      "id": "smilodonnad", "name": "スミロドナッド", "hp": 115,
+      "head": "head_trap", "rightArm": "rarm_flexsword", "leftArm": "larm_strawhammer", "legs": "legs_bipedal"
+    },
+    "warbanit": {
+      "id": "warbanit", "name": "ウォーバニット", "hp": 115,
+      "head": "head_cheer", "rightArm": "rarm_sniper", "leftArm": "larm_rangeshot", "legs": "legs_bipedal"
+    },
+    "peppercat": {
+      "id": "peppercat", "name": "ペッパーキャット", "hp": 95,
+      "head": "head_stealth", "rightArm": "rarm_thunder", "leftArm": "larm_thunder", "legs": "legs_hover"
+    },
+    "belzelga": {
+      "id": "belzelga", "name": "ベルゼルガ", "hp": 130,
+      "head": "head_barrier", "rightArm": "rarm_pile", "leftArm": "larm_shield", "legs": "legs_multi"
+    },
+    "blackram": {
+      "id": "blackram", "name": "ブラックラム", "hp": 160,
+      "head": "head_barrier", "rightArm": "rarm_gatling", "leftArm": "larm_shield", "legs": "legs_tank"
+    },
+    "phoenix": {
+      "id": "phoenix", "name": "フェニックス", "hp": 90,
+      "head": "head_beam", "rightArm": "rarm_laser", "leftArm": "larm_repair", "legs": "legs_flight"
+    },
+    "sniper": {
+      "id": "sniper", "name": "スナイパー", "hp": 90,
+      "head": "head_scope", "rightArm": "rarm_sniper", "leftArm": "larm_beam", "legs": "legs_flight"
+    },
+    "darkqueen": {
+      "id": "darkqueen", "name": "ダーククイーン", "hp": 110,
+      "head": "head_trap", "rightArm": "rarm_missile", "leftArm": "larm_trap", "legs": "legs_multi"
+    },
+    "blackmail": {
+      "id": "blackmail", "name": "ブラックメイル", "hp": 180,
+      "head": "head_jamming", "rightArm": "rarm_deathmissile", "leftArm": "larm_shield", "legs": "legs_deathcrawler"
+    }
+  },
+  "presets": [
+    {
+      "name": "イッキ＆友達",
+      "description": "メタビー・ロクショウ・ウォーバニット",
+      "team": ["metabee", "rokusho", "warbanit"]
+    },
+    {
+      "name": "最強火力",
+      "description": "アークビートル・ゴッドエンペラー・フェニックス",
+      "team": ["arcbeetle", "godemperor", "phoenix"]
+    },
+    {
+      "name": "格闘特化",
+      "description": "ロクショウ・スミロドナッド・ベルゼルガ",
+      "team": ["rokusho", "smilodonnad", "belzelga"]
+    },
+    {
+      "name": "要塞防衛",
+      "description": "ブラックラム・ベルゼルガ・ダーククイーン",
+      "team": ["blackram", "belzelga", "darkqueen"]
+    },
+    {
+      "name": "スピード殲滅",
+      "description": "ペッパーキャット・フェニックス・スナイパー",
+      "team": ["peppercat", "phoenix", "sniper"]
+    }
+  ],
+  "enemyPresets": [
+    {
+      "name": "ロボロボ団",
+      "team": ["darkqueen", "smilodonnad", "blackram"]
+    },
+    {
+      "name": "セレクト隊",
+      "team": ["godemperor", "warbanit", "sniper"]
+    },
+    {
+      "name": "スクリューズ",
+      "team": ["peppercat", "belzelga", "darkqueen"]
+    },
+    {
+      "name": "ダークロボトル",
+      "team": ["blackmail", "godemperor", "darkqueen"]
+    }
+  ]
+}
