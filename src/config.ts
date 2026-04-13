@@ -1,12 +1,12 @@
 export const CONFIG = {
-  GRID_COLS: 10,     // 横（自陣5 + 敵陣5）
-  GRID_ROWS: 6,      // 縦（6ライン）
+  GRID_COLS: 10, // 横（自陣5 + 敵陣5）
+  GRID_ROWS: 6, // 縦（6ライン）
   CELL_PX: 48,
 
   TEAM_SIZE: 3,
 
   // 陣地: 左が自陣、右が敵陣
-  TERRITORY_X: 5,    // 自陣: x < 5, 敵陣: x >= 5
+  TERRITORY_X: 5, // 自陣: x < 5, 敵陣: x >= 5
 
   DAMAGE_VARIANCE_MIN: 0.85,
   DAMAGE_VARIANCE_MAX: 1.15,

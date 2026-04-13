@@ -28,7 +28,10 @@ export class MessageLog {
         this.addMessage(`--- ${event.team === 'player' ? '自軍' : '敵軍'}ターン ---`, 'info');
         break;
       case 'victory':
-        this.addMessage(event.winner === 'player' ? '勝利！' : '敗北...', event.winner === 'player' ? 'scan' : 'hit');
+        this.addMessage(
+          event.winner === 'player' ? '勝利！' : '敗北...',
+          event.winner === 'player' ? 'scan' : 'hit',
+        );
         break;
     }
   }

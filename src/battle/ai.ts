@@ -1,10 +1,21 @@
 import { BattleState } from './battle-state';
-import { BattlePhase, ActionKind, PartSlot, BattleAction, MedabotState, Team } from '../models/types';
+import {
+  BattlePhase,
+  ActionKind,
+  PartSlot,
+  BattleAction,
+  MedabotState,
+  Team,
+} from '../models/types';
 import { moveAction, attackAction, guardAction, skipAction } from '../models/action';
 import { isAlive, canUseHead, getMoveRange } from '../models/medabot';
 import {
-  getMovablePositions, posEqual, manhattan,
-  getBlastShapePositions, getMeleeTargets, getShootingTargets,
+  getMovablePositions,
+  posEqual,
+  manhattan,
+  getBlastShapePositions,
+  getMeleeTargets,
+  getShootingTargets,
 } from './grid';
 import { getWeapon } from '../data/weapons-db';
 import { pick } from '../utils/random';
@@ -39,7 +50,10 @@ function planUnitActions(state: BattleState): BattleAction[] {
         for (const pos of movable) {
           for (const { unit: target } of visible) {
             const dist = manhattan(pos, target.position);
-            if (dist < bestDist) { bestDist = dist; bestPos = pos; }
+            if (dist < bestDist) {
+              bestDist = dist;
+              bestPos = pos;
+            }
           }
         }
         if (!posEqual(bestPos, unit.position)) {
@@ -53,8 +67,12 @@ function planUnitActions(state: BattleState): BattleAction[] {
   }
 
   // ── 2) 索敵（見えている敵がいない場合） ──
-  if (visible.length === 0 && canUseHead(unit) && unit.parts.head.assistType === 'scan'
-      && unit.jammedPartSlot !== PartSlot.Head) {
+  if (
+    visible.length === 0 &&
+    canUseHead(unit) &&
+    unit.parts.head.assistType === 'scan' &&
+    unit.jammedPartSlot !== PartSlot.Head
+  ) {
     actions.push({ kind: ActionKind.Assist, unitIndex: idx, partSlot: PartSlot.Head });
     return actions;
   }
@@ -67,8 +85,11 @@ function planUnitActions(state: BattleState): BattleAction[] {
   }
 
   // ── 4) 補助・防御 ──
-  if (canUseHead(unit) && unit.parts.head.actionType === 'たすける'
-      && unit.jammedPartSlot !== PartSlot.Head) {
+  if (
+    canUseHead(unit) &&
+    unit.parts.head.actionType === 'たすける' &&
+    unit.jammedPartSlot !== PartSlot.Head
+  ) {
     actions.push({ kind: ActionKind.Assist, unitIndex: idx, partSlot: PartSlot.Head });
   } else if (unit.parts.leftArm.actionType === 'まもる') {
     actions.push(guardAction(idx));
@@ -85,8 +106,12 @@ function planAttack(
   visible: { unit: MedabotState; index: number }[],
 ): BattleAction | null {
   for (const slot of [PartSlot.RightArm, PartSlot.LeftArm, PartSlot.Head]) {
-    const part = slot === PartSlot.Head ? unit.parts.head
-      : slot === PartSlot.RightArm ? unit.parts.rightArm : unit.parts.leftArm;
+    const part =
+      slot === PartSlot.Head
+        ? unit.parts.head
+        : slot === PartSlot.RightArm
+          ? unit.parts.rightArm
+          : unit.parts.leftArm;
 
     if (slot === PartSlot.Head && !canUseHead(unit)) continue;
     if (!part.weaponType) continue;
@@ -100,17 +125,33 @@ function planAttack(
       const frontX = CONFIG.TERRITORY_X;
       const trapTargets = [];
       for (let y = 0; y < CONFIG.GRID_ROWS; y++) trapTargets.push({ x: frontX, y });
-      return { kind: ActionKind.SetDevice, unitIndex: idx, target: pick(trapTargets), partSlot: slot };
+      return {
+        kind: ActionKind.SetDevice,
+        unitIndex: idx,
+        target: pick(trapTargets),
+        partSlot: slot,
+      };
     }
 
     const weapon = getWeapon(part.weaponType);
     if (!weapon) continue;
 
     // 自動照準
-    if (weapon.blastShape === 'same_col' || weapon.blastShape === 'mirror_col' || weapon.blastShape === 'front4' || weapon.blastShape === 'front2' || weapon.blastShape === 'vertical_line') {
-      const hitPositions = getBlastShapePositions(unit.position, unit.position, Team.Enemy, weapon.blastShape);
+    if (
+      weapon.blastShape === 'same_col' ||
+      weapon.blastShape === 'mirror_col' ||
+      weapon.blastShape === 'front4' ||
+      weapon.blastShape === 'front2' ||
+      weapon.blastShape === 'vertical_line'
+    ) {
+      const hitPositions = getBlastShapePositions(
+        unit.position,
+        unit.position,
+        Team.Enemy,
+        weapon.blastShape,
+      );
       const canHit = visible.some(({ unit: p }) =>
-        hitPositions.some(hp => posEqual(hp, p.position))
+        hitPositions.some((hp) => posEqual(hp, p.position)),
       );
       if (canHit || (visible.length === 0 && Math.random() < 0.3)) {
         return { kind: ActionKind.Attack, unitIndex: idx, partSlot: slot };
@@ -121,12 +162,14 @@ function planAttack(
     // pick3
     if (weapon.blastShape === 'pick3') {
       if (visible.length > 0) {
-        const targets: { x: number; y: number }[] = visible.slice(0, 3).map(({ unit: p }) => ({ ...p.position }));
+        const targets: { x: number; y: number }[] = visible
+          .slice(0, 3)
+          .map(({ unit: p }) => ({ ...p.position }));
         // 3枠に満たない分は敵陣のランダムな空きマスで埋める（重複禁止）
         if (targets.length < 3) {
           const area = getShootingTargets(Team.Enemy);
-          const isTaken = (p: { x: number; y: number }) => targets.some(t => posEqual(t, p));
-          const candidates = area.filter(p => !isTaken(p));
+          const isTaken = (p: { x: number; y: number }) => targets.some((t) => posEqual(t, p));
+          const candidates = area.filter((p) => !isTaken(p));
           while (targets.length < 3 && candidates.length > 0) {
             const idx2 = Math.floor(Math.random() * candidates.length);
             targets.push(candidates.splice(idx2, 1)[0]);
@@ -154,7 +197,7 @@ function planAttack(
     if (weapon.category === 'melee') {
       const meleeTargets = getMeleeTargets(Team.Enemy, unit.position.x);
       const target = visible.find(({ unit: p }) =>
-        meleeTargets.some(t => posEqual(t, p.position))
+        meleeTargets.some((t) => posEqual(t, p.position)),
       );
       if (target) return attackAction(idx, target.unit.position, slot);
       continue;
@@ -201,5 +244,5 @@ export async function executeAiTurnAnimated(
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

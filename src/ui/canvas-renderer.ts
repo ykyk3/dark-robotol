@@ -2,7 +2,13 @@ import { CONFIG } from '../config';
 import { BattleState } from '../battle/battle-state';
 import { Position, Team } from '../models/types';
 import { isAlive } from '../models/medabot';
-import { WeaponAnimation, drawWeaponAnimation, getWeaponSpeed, getWeaponFlashAt, hasImpactPhase } from './weapon-animations';
+import {
+  WeaponAnimation,
+  drawWeaponAnimation,
+  getWeaponSpeed,
+  getWeaponFlashAt,
+  hasImpactPhase,
+} from './weapon-animations';
 
 const C = CONFIG.COLORS;
 
@@ -20,7 +26,12 @@ export class CanvasRenderer {
   cursorCell: Position | null = null;
 
   private flashEffects: { pos: Position[]; color: string; frames: number }[] = [];
-  private scanEffects: { rows: number[]; scannerTeam: Team; frames: number; totalFrames: number }[] = [];
+  private scanEffects: {
+    rows: number[];
+    scannerTeam: Team;
+    frames: number;
+    totalFrames: number;
+  }[] = [];
   private moveAnim: { from: Position; to: Position; progress: number; color: string } | null = null;
   private weaponAnim: WeaponAnimation | null = null;
 
@@ -61,12 +72,18 @@ export class CanvasRenderer {
     for (let i = 0; i <= CONFIG.GRID_COLS; i++) {
       ctx.strokeStyle = C.GRID_LINE;
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(i * cs, 0); ctx.lineTo(i * cs, CONFIG.GRID_ROWS * cs); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(i * cs, 0);
+      ctx.lineTo(i * cs, CONFIG.GRID_ROWS * cs);
+      ctx.stroke();
     }
     for (let j = 0; j <= CONFIG.GRID_ROWS; j++) {
       ctx.strokeStyle = C.GRID_LINE;
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, j * cs); ctx.lineTo(CONFIG.GRID_COLS * cs, j * cs); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, j * cs);
+      ctx.lineTo(CONFIG.GRID_COLS * cs, j * cs);
+      ctx.stroke();
     }
   }
 
@@ -77,7 +94,10 @@ export class CanvasRenderer {
     ctx.strokeStyle = 'rgba(220, 20, 60, 0.5)';
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CONFIG.GRID_ROWS * this.cellSize); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, CONFIG.GRID_ROWS * this.cellSize);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -85,13 +105,16 @@ export class CanvasRenderer {
     const ctx = this.ctx;
     const cs = this.cellSize;
     for (const p of this.highlightMoveRange) {
-      ctx.fillStyle = C.MOVE_RANGE; ctx.fillRect(p.x * cs + 1, p.y * cs + 1, cs - 2, cs - 2);
+      ctx.fillStyle = C.MOVE_RANGE;
+      ctx.fillRect(p.x * cs + 1, p.y * cs + 1, cs - 2, cs - 2);
     }
     for (const p of this.highlightAttackRange) {
-      ctx.fillStyle = C.ATTACK_RANGE; ctx.fillRect(p.x * cs + 1, p.y * cs + 1, cs - 2, cs - 2);
+      ctx.fillStyle = C.ATTACK_RANGE;
+      ctx.fillRect(p.x * cs + 1, p.y * cs + 1, cs - 2, cs - 2);
     }
     for (const p of this.highlightScanRange) {
-      ctx.fillStyle = C.SCAN_RANGE; ctx.fillRect(p.x * cs + 1, p.y * cs + 1, cs - 2, cs - 2);
+      ctx.fillStyle = C.SCAN_RANGE;
+      ctx.fillRect(p.x * cs + 1, p.y * cs + 1, cs - 2, cs - 2);
     }
     // 選択済みセル（pick3）
     for (const p of this.highlightSelected) {
@@ -109,7 +132,14 @@ export class CanvasRenderer {
       if (!isAlive(unit)) continue;
       const x = unit.position.x * cs + cs / 2;
       const y = unit.position.y * cs + cs / 2;
-      this.drawBot(x, y, C.PLAYER_UNIT, unit.def.name[0], unit.isGuarding, unit.isConcealed ? 0.5 : 1);
+      this.drawBot(
+        x,
+        y,
+        C.PLAYER_UNIT,
+        unit.def.name[0],
+        unit.isGuarding,
+        unit.isConcealed ? 0.5 : 1,
+      );
     }
     for (let i = 0; i < state.enemyTeam.length; i++) {
       const unit = state.enemyTeam[i];
@@ -120,27 +150,48 @@ export class CanvasRenderer {
     }
     for (const unit of state.playerTeam) {
       if (isAlive(unit)) continue;
-      this.drawDestroyedMarker(unit.position.x * cs + cs / 2, unit.position.y * cs + cs / 2, C.PLAYER_UNIT);
+      this.drawDestroyedMarker(
+        unit.position.x * cs + cs / 2,
+        unit.position.y * cs + cs / 2,
+        C.PLAYER_UNIT,
+      );
     }
   }
 
-  private drawBot(cx: number, cy: number, color: string, label: string, guarding: boolean, alpha: number): void {
+  private drawBot(
+    cx: number,
+    cy: number,
+    color: string,
+    label: string,
+    guarding: boolean,
+    alpha: number,
+  ): void {
     const ctx = this.ctx;
     const r = this.cellSize * 0.35;
     ctx.save();
     ctx.globalAlpha = alpha * 0.2;
     ctx.fillStyle = color;
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
     ctx.globalAlpha = alpha;
-    ctx.strokeStyle = color; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
     if (guarding) {
-      ctx.strokeStyle = C.ACCENT_GREEN; ctx.setLineDash([4, 4]);
-      ctx.beginPath(); ctx.arc(cx, cy, r + 4, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = C.ACCENT_GREEN;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
     ctx.fillStyle = color;
     ctx.font = `bold ${Math.floor(this.cellSize * 0.3)}px 'DotGothic16', monospace`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     ctx.fillText(label, cx, cy);
     ctx.restore();
   }
@@ -148,11 +199,17 @@ export class CanvasRenderer {
   private drawDestroyedMarker(cx: number, cy: number, color: string): void {
     const ctx = this.ctx;
     const s = this.cellSize * 0.2;
-    ctx.save(); ctx.strokeStyle = color; ctx.globalAlpha = 0.3; ctx.lineWidth = 2;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(cx - s, cy - s); ctx.lineTo(cx + s, cy + s);
-    ctx.moveTo(cx + s, cy - s); ctx.lineTo(cx - s, cy + s);
-    ctx.stroke(); ctx.restore();
+    ctx.moveTo(cx - s, cy - s);
+    ctx.lineTo(cx + s, cy + s);
+    ctx.moveTo(cx + s, cy - s);
+    ctx.lineTo(cx - s, cy + s);
+    ctx.stroke();
+    ctx.restore();
   }
 
   private drawTraps(state: BattleState): void {
@@ -164,15 +221,20 @@ export class CanvasRenderer {
       const y = trap.position.y * cs + cs / 2;
       ctx.fillStyle = 'rgba(220, 20, 60, 0.3)';
       ctx.beginPath();
-      ctx.moveTo(x, y - 6); ctx.lineTo(x + 6, y + 4); ctx.lineTo(x - 6, y + 4);
-      ctx.closePath(); ctx.fill();
+      ctx.moveTo(x, y - 6);
+      ctx.lineTo(x + 6, y + 4);
+      ctx.lineTo(x - 6, y + 4);
+      ctx.closePath();
+      ctx.fill();
     }
   }
 
   private drawSelectedCell(): void {
     if (!this.selectedCell) return;
-    const ctx = this.ctx; const cs = this.cellSize;
-    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+    const ctx = this.ctx;
+    const cs = this.cellSize;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
     ctx.strokeRect(this.selectedCell.x * cs + 2, this.selectedCell.y * cs + 2, cs - 4, cs - 4);
   }
 
@@ -197,13 +259,14 @@ export class CanvasRenderer {
 
   private drawFlashEffect(): void {
     if (this.flashEffects.length === 0) return;
-    const ctx = this.ctx; const cs = this.cellSize;
+    const ctx = this.ctx;
+    const cs = this.cellSize;
     for (const effect of this.flashEffects) {
       ctx.fillStyle = effect.color;
       for (const p of effect.pos) ctx.fillRect(p.x * cs, p.y * cs, cs, cs);
       effect.frames--;
     }
-    this.flashEffects = this.flashEffects.filter(e => e.frames > 0);
+    this.flashEffects = this.flashEffects.filter((e) => e.frames > 0);
   }
 
   flash(positions: Position[], color: string, frames = 15): void {
@@ -276,7 +339,9 @@ export class CanvasRenderer {
         for (let i = 0; i < 3; i++) {
           const waveRadius = cs * (0.14 + i * 0.09);
           // 波ごとに位相をずらしたパルス
-          const wavePulse = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin((effect.totalFrames - effect.frames) * 0.2 - i * 0.8));
+          const wavePulse =
+            0.4 +
+            0.6 * (0.5 + 0.5 * Math.sin((effect.totalFrames - effect.frames) * 0.2 - i * 0.8));
           ctx.globalAlpha = iconAlpha * wavePulse;
           ctx.beginPath();
           ctx.arc(iconCx, iconCy, waveRadius, startAngle, endAngle);
@@ -288,7 +353,7 @@ export class CanvasRenderer {
 
       effect.frames--;
     }
-    this.scanEffects = this.scanEffects.filter(e => e.frames > 0);
+    this.scanEffects = this.scanEffects.filter((e) => e.frames > 0);
   }
 
   private drawMoveAnim(): void {
@@ -310,7 +375,10 @@ export class CanvasRenderer {
     ctx.strokeStyle = a.color;
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(cx, cy); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(cx, cy);
+    ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
 
@@ -328,7 +396,7 @@ export class CanvasRenderer {
     targets: Position[];
     hasHits: boolean;
   }): Promise<void> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const speeds = getWeaponSpeed(params.weaponId);
       this.weaponAnim = {
         weaponId: params.weaponId,
@@ -353,7 +421,7 @@ export class CanvasRenderer {
 
   waitForAnimation(): Promise<void> {
     if (!this.weaponAnim) return Promise.resolve();
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const orig = this.weaponAnim!.onComplete;
       this.weaponAnim!.onComplete = () => {
         orig?.();
@@ -411,8 +479,8 @@ export class CanvasRenderer {
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = this.canvas.width / rect.width;
     const scaleY = this.canvas.height / rect.height;
-    const x = Math.floor((px - rect.left) * scaleX / this.cellSize);
-    const y = Math.floor((py - rect.top) * scaleY / this.cellSize);
+    const x = Math.floor(((px - rect.left) * scaleX) / this.cellSize);
+    const y = Math.floor(((py - rect.top) * scaleY) / this.cellSize);
     if (x >= 0 && x < CONFIG.GRID_COLS && y >= 0 && y < CONFIG.GRID_ROWS) return { x, y };
     return null;
   }

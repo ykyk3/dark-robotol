@@ -46,8 +46,8 @@ export function getMovablePositions(
 ): Position[] {
   const occupied = new Set(
     allBots
-      .filter(b => b.currentHp > 0 && b !== bot)
-      .map(b => `${b.position.x},${b.position.y}`),
+      .filter((b) => b.currentHp > 0 && b !== bot)
+      .map((b) => `${b.position.x},${b.position.y}`),
   );
 
   const result: Position[] = [];
@@ -89,7 +89,13 @@ export function getMeleeTargets(team: Team, attackerX: number): Position[] {
 
 /** 武器に応じたターゲット候補（UI ハイライト用） */
 export function getTargetCells(weapon: WeaponDef, team: Team, attackerX = 0): Position[] {
-  if (weapon.blastShape === 'same_col' || weapon.blastShape === 'mirror_col' || weapon.blastShape === 'front4' || weapon.blastShape === 'front2' || weapon.blastShape === 'vertical_line') {
+  if (
+    weapon.blastShape === 'same_col' ||
+    weapon.blastShape === 'mirror_col' ||
+    weapon.blastShape === 'front4' ||
+    weapon.blastShape === 'front2' ||
+    weapon.blastShape === 'vertical_line'
+  ) {
     return []; // 自動照準
   }
   if (weapon.category === 'melee') return getMeleeTargets(team, attackerX);
@@ -99,7 +105,10 @@ export function getTargetCells(weapon: WeaponDef, team: Team, attackerX = 0): Po
 // ── 着弾パターン ──
 
 export function getBlastShapePositions(
-  attacker: Position, target: Position, team: Team, shape: string,
+  attacker: Position,
+  target: Position,
+  team: Team,
+  shape: string,
 ): Position[] {
   switch (shape) {
     case 'pick3':
@@ -163,7 +172,12 @@ export function getBlastPositions(center: Position, area: number): Position[] {
 
   const positions = [center];
   if (area >= 1) {
-    for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+    for (const [dx, dy] of [
+      [0, -1],
+      [0, 1],
+      [-1, 0],
+      [1, 0],
+    ]) {
       const p = { x: center.x + dx, y: center.y + dy };
       if (inBounds(p)) positions.push(p);
     }
@@ -172,7 +186,7 @@ export function getBlastPositions(center: Position, area: number): Position[] {
     for (let dx = -1; dx <= 1; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
         const p = { x: center.x + dx, y: center.y + dy };
-        if (inBounds(p) && !positions.some(q => posEqual(q, p))) {
+        if (inBounds(p) && !positions.some((q) => posEqual(q, p))) {
           positions.push(p);
         }
       }
@@ -199,7 +213,9 @@ export function getScanPositions(attacker: Position, team: Team): Position[] {
 // ── 自動照準プレビュー（UI 用） ──
 
 export function getAutoTargetPreview(
-  weapon: WeaponDef, attacker: Position, team: Team,
+  weapon: WeaponDef,
+  attacker: Position,
+  team: Team,
 ): Position[] {
   if (!weapon.blastShape) return [];
   return getBlastShapePositions(attacker, attacker, team, weapon.blastShape);

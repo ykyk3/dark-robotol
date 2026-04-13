@@ -17,11 +17,11 @@ export type ActionSelection =
   | { kind: 'skip' };
 
 const ACTION_TYPE_LABELS: Record<string, string> = {
-  'こうげき': '攻撃',
-  'まもる': '防御',
-  'なおす': '回復',
-  'たすける': '補助',
-  'しかける': '設置',
+  こうげき: '攻撃',
+  まもる: '防御',
+  なおす: '回復',
+  たすける: '補助',
+  しかける: '設置',
 };
 
 export class ActionMenu {
@@ -55,7 +55,8 @@ export class ActionMenu {
 
     // ── 敵ターン ──
     if (state.phase !== BattlePhase.PlayerTurn) {
-      this.container.innerHTML = '<span style="color: var(--accent-red); padding: 4px;">敵ターン...</span>';
+      this.container.innerHTML =
+        '<span style="color: var(--accent-red); padding: 4px;">敵ターン...</span>';
       return;
     }
 
@@ -72,20 +73,54 @@ export class ActionMenu {
     // 頭 (上)
     if (canUseHead(unit)) {
       const hl = this.isPartHighlighted(unit.parts.head, PartSlot.Head);
-      this.addPartButton(cross, 'cross-top', unit.parts.head, PartSlot.Head, '頭', isLocked, hl, unit);
+      this.addPartButton(
+        cross,
+        'cross-top',
+        unit.parts.head,
+        PartSlot.Head,
+        '頭',
+        isLocked,
+        hl,
+        unit,
+      );
     }
 
     // 左腕 (左)
     const leftHl = this.isPartHighlighted(unit.parts.leftArm, PartSlot.LeftArm);
-    this.addPartButton(cross, 'cross-left', unit.parts.leftArm, PartSlot.LeftArm, '左', isLocked, leftHl, unit);
+    this.addPartButton(
+      cross,
+      'cross-left',
+      unit.parts.leftArm,
+      PartSlot.LeftArm,
+      '左',
+      isLocked,
+      leftHl,
+      unit,
+    );
 
     // 右腕 (右)
     const rightHl = this.isPartHighlighted(unit.parts.rightArm, PartSlot.RightArm);
-    this.addPartButton(cross, 'cross-right', unit.parts.rightArm, PartSlot.RightArm, '右', isLocked, rightHl, unit);
+    this.addPartButton(
+      cross,
+      'cross-right',
+      unit.parts.rightArm,
+      PartSlot.RightArm,
+      '右',
+      isLocked,
+      rightHl,
+      unit,
+    );
 
     // 移動 (下)
     const moveHl = this.currentSelection?.kind === 'move';
-    this.addGridButton(cross, 'cross-bottom', '移動', { kind: 'move' }, isLocked || hasMoved, moveHl);
+    this.addGridButton(
+      cross,
+      'cross-bottom',
+      '移動',
+      { kind: 'move' },
+      isLocked || hasMoved,
+      moveHl,
+    );
 
     this.container.appendChild(cross);
 
@@ -147,8 +182,14 @@ export class ActionMenu {
   }
 
   private addPartButton(
-    parent: HTMLElement, cssClass: string, part: PartDef, slot: PartSlot,
-    prefix: string, disabled = false, highlighted = false, unit?: MedabotState,
+    parent: HTMLElement,
+    cssClass: string,
+    part: PartDef,
+    slot: PartSlot,
+    prefix: string,
+    disabled = false,
+    highlighted = false,
+    unit?: MedabotState,
   ): void {
     const actionType = part.actionType;
     if (!actionType) return;
@@ -183,8 +224,12 @@ export class ActionMenu {
   }
 
   private addGridButton(
-    parent: HTMLElement, cssClass: string, label: string, action: ActionSelection,
-    disabled = false, highlighted = false,
+    parent: HTMLElement,
+    cssClass: string,
+    label: string,
+    action: ActionSelection,
+    disabled = false,
+    highlighted = false,
   ): void {
     const btn = document.createElement('button');
     btn.className = `action-btn ${cssClass}`;
@@ -194,7 +239,9 @@ export class ActionMenu {
       btn.disabled = true;
     } else {
       btn.addEventListener('click', () => {
-        this.container.querySelectorAll('.action-btn').forEach(b => b.classList.remove('selected'));
+        this.container
+          .querySelectorAll('.action-btn')
+          .forEach((b) => b.classList.remove('selected'));
         btn.classList.add('selected');
         this.currentSelection = action;
         this.onSelect(action);
@@ -208,7 +255,7 @@ export class ActionMenu {
     btn.className = 'action-btn';
     btn.textContent = label;
     btn.addEventListener('click', () => {
-      this.container.querySelectorAll('.action-btn').forEach(b => b.classList.remove('selected'));
+      this.container.querySelectorAll('.action-btn').forEach((b) => b.classList.remove('selected'));
       btn.classList.add('selected');
       this.currentSelection = action;
       this.onSelect(action);

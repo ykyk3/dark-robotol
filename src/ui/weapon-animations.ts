@@ -58,7 +58,9 @@ function teamCenterPx(origin: Position, cs: number): number {
   if (isPlayerSide(origin)) {
     return Math.floor(CONFIG.TERRITORY_X / 2) * cs + cs / 2;
   }
-  return (CONFIG.TERRITORY_X + Math.floor((CONFIG.GRID_COLS - CONFIG.TERRITORY_X) / 2)) * cs + cs / 2;
+  return (
+    (CONFIG.TERRITORY_X + Math.floor((CONFIG.GRID_COLS - CONFIG.TERRITORY_X) / 2)) * cs + cs / 2
+  );
 }
 
 /** 攻撃者の行の自陣境界ピクセルX座標（ビーム発射点） */
@@ -66,7 +68,7 @@ function teamEdgePx(origin: Position, cs: number): number {
   if (isPlayerSide(origin)) {
     return CONFIG.TERRITORY_X * cs; // 自陣右端
   }
-  return CONFIG.TERRITORY_X * cs;   // 敵陣左端
+  return CONFIG.TERRITORY_X * cs; // 敵陣左端
 }
 
 // ── 武器別描画関数 ──
@@ -92,7 +94,9 @@ const drawRifle: WeaponDrawFn = (ctx, anim, cs) => {
     ctx.fillStyle = '#ffdd44';
     ctx.shadowColor = '#ffdd44';
     ctx.shadowBlur = 8;
-    ctx.beginPath(); ctx.arc(tgt.px, tgt.py, flashR, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(tgt.px, tgt.py, flashR, 0, Math.PI * 2);
+    ctx.fill();
 
     // スパーク線
     if (localT < 0.5) {
@@ -149,7 +153,7 @@ const drawGatling: WeaponDrawFn = (ctx, anim, cs) => {
 // --- missile: 自陣の縦列全マスから敵陣の縦列全マスへ放物線 ---
 const drawMissile: WeaponDrawFn = (ctx, anim, cs) => {
   const originX = anim.origin.x;
-  const targetX = anim.targets[0]?.x ?? (CONFIG.GRID_COLS - 1 - originX);
+  const targetX = anim.targets[0]?.x ?? CONFIG.GRID_COLS - 1 - originX;
 
   // 発射元→着弾先のペアを生成（同じy座標同士で対応）
   if (!anim.extra) {
@@ -182,13 +186,17 @@ const drawMissile: WeaponDrawFn = (ctx, anim, cs) => {
         const smx = lerp(o.px, tgt.px, st);
         const smy = lerp(o.py, tgt.py, st) - parabola(st, 35);
         ctx.fillStyle = `rgba(150, 150, 150, ${0.15 * (1 - i / 4)})`;
-        ctx.beginPath(); ctx.arc(smx, smy, 2 + i, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(smx, smy, 2 + i, 0, Math.PI * 2);
+        ctx.fill();
       }
       // 弾頭
       ctx.fillStyle = '#ff8844';
       ctx.shadowColor = '#ff4400';
       ctx.shadowBlur = 6;
-      ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.arc(bx, by, 3, 0, Math.PI * 2);
+      ctx.fill();
       ctx.shadowBlur = 0;
     }
     ctx.restore();
@@ -207,7 +215,9 @@ const drawMissile: WeaponDrawFn = (ctx, anim, cs) => {
       grad.addColorStop(0.6, 'rgba(255, 60, 0, 0.4)');
       grad.addColorStop(1, 'rgba(255, 60, 0, 0)');
       ctx.fillStyle = grad;
-      ctx.beginPath(); ctx.arc(tgt.px, tgt.py, r, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.arc(tgt.px, tgt.py, r, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }
@@ -221,8 +231,8 @@ const drawLaser: WeaponDrawFn = (ctx, anim, cs) => {
   const oy = anim.origin.y * cs + cs / 2;
   // 最遠ターゲットを終点にする
   const farthest = player
-    ? anim.targets.reduce((a, b) => b.x > a.x ? b : a, anim.targets[0])
-    : anim.targets.reduce((a, b) => b.x < a.x ? b : a, anim.targets[0]);
+    ? anim.targets.reduce((a, b) => (b.x > a.x ? b : a), anim.targets[0])
+    : anim.targets.reduce((a, b) => (b.x < a.x ? b : a), anim.targets[0]);
   const endPt = cellCenter(farthest, cs);
   const t = anim.progress;
   const ex = lerp(edgeX, endPt.px, t);
@@ -234,10 +244,16 @@ const drawLaser: WeaponDrawFn = (ctx, anim, cs) => {
   ctx.shadowBlur = 10;
   ctx.lineWidth = 2;
   ctx.globalAlpha = 0.9;
-  ctx.beginPath(); ctx.moveTo(edgeX, oy); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(edgeX, oy);
+  ctx.lineTo(ex, ey);
+  ctx.stroke();
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(edgeX, oy); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(edgeX, oy);
+  ctx.lineTo(ex, ey);
+  ctx.stroke();
   ctx.shadowBlur = 0;
   ctx.restore();
 };
@@ -249,8 +265,8 @@ const drawBeam: WeaponDrawFn = (ctx, anim, cs) => {
   const edgeX = teamEdgePx(anim.origin, cs);
   const oy = anim.origin.y * cs + cs / 2;
   const farthest = player
-    ? anim.targets.reduce((a, b) => b.x > a.x ? b : a, anim.targets[0])
-    : anim.targets.reduce((a, b) => b.x < a.x ? b : a, anim.targets[0]);
+    ? anim.targets.reduce((a, b) => (b.x > a.x ? b : a), anim.targets[0])
+    : anim.targets.reduce((a, b) => (b.x < a.x ? b : a), anim.targets[0]);
   const endPt = cellCenter(farthest, cs);
   const t = anim.progress;
   const ex = lerp(edgeX, endPt.px, t);
@@ -262,11 +278,17 @@ const drawBeam: WeaponDrawFn = (ctx, anim, cs) => {
   ctx.shadowBlur = 15;
   ctx.lineWidth = 8;
   ctx.globalAlpha = 0.7;
-  ctx.beginPath(); ctx.moveTo(edgeX, oy); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(edgeX, oy);
+  ctx.lineTo(ex, ey);
+  ctx.stroke();
   ctx.strokeStyle = '#ffccff';
   ctx.lineWidth = 3;
   ctx.globalAlpha = 0.9;
-  ctx.beginPath(); ctx.moveTo(edgeX, oy); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(edgeX, oy);
+  ctx.lineTo(ex, ey);
+  ctx.stroke();
   ctx.shadowBlur = 0;
   ctx.restore();
 };
@@ -284,7 +306,9 @@ const drawBreak: WeaponDrawFn = (ctx, anim, cs) => {
     ctx.fillStyle = '#ff3333';
     ctx.shadowColor = '#ff0000';
     ctx.shadowBlur = 12;
-    ctx.beginPath(); ctx.arc(tgt.px, tgt.py, flashR, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(tgt.px, tgt.py, flashR, 0, Math.PI * 2);
+    ctx.fill();
     ctx.shadowBlur = 0;
     ctx.restore();
   } else {
@@ -297,7 +321,12 @@ const drawBreak: WeaponDrawFn = (ctx, anim, cs) => {
     ctx.lineWidth = 2;
     ctx.shadowColor = '#ffffff';
     ctx.shadowBlur = 6;
-    for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+    for (const [dx, dy] of [
+      [0, -1],
+      [0, 1],
+      [-1, 0],
+      [1, 0],
+    ]) {
       ctx.beginPath();
       ctx.moveTo(tgt.px, tgt.py);
       ctx.lineTo(tgt.px + dx * len, tgt.py + dy * len);
@@ -315,7 +344,9 @@ const drawThunder: WeaponDrawFn = (ctx, anim, cs) => {
     const paths: { px: number; py: number }[][] = [];
     for (const pos of anim.targets) {
       const c = cellCenter(pos, cs);
-      const segs: { px: number; py: number }[] = [{ px: c.px + (Math.random() - 0.5) * 20, py: -10 }];
+      const segs: { px: number; py: number }[] = [
+        { px: c.px + (Math.random() - 0.5) * 20, py: -10 },
+      ];
       const steps = 4 + Math.floor(Math.random() * 3);
       for (let i = 1; i <= steps; i++) {
         segs.push({
@@ -393,7 +424,9 @@ const drawSword: WeaponDrawFn = (ctx, anim, cs) => {
     const tipX = arcCx + r * Math.cos(currentAngle);
     const tipY = arcCy + r * Math.sin(currentAngle);
     ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(tipX, tipY, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(tipX, tipY, 4, 0, Math.PI * 2);
+    ctx.fill();
   }
   ctx.shadowBlur = 0;
   ctx.restore();
@@ -414,7 +447,9 @@ const drawHammer: WeaponDrawFn = (ctx, anim, cs) => {
     ctx.strokeStyle = '#ff8800';
     ctx.lineWidth = 2;
     const shrink = (1 - t) * cs;
-    ctx.beginPath(); ctx.arc(hitX, centerY, shrink, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(hitX, centerY, shrink, 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   } else {
     // 衝撃波リング
@@ -426,12 +461,16 @@ const drawHammer: WeaponDrawFn = (ctx, anim, cs) => {
     ctx.shadowColor = '#ff8800';
     ctx.shadowBlur = 8;
     ctx.lineWidth = 3 * (1 - t) + 1;
-    ctx.beginPath(); ctx.arc(hitX, centerY, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(hitX, centerY, r, 0, Math.PI * 2);
+    ctx.stroke();
     // 内側リング
     if (t < 0.6) {
       ctx.strokeStyle = '#ffcc44';
       ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(hitX, centerY, r * 0.6, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(hitX, centerY, r * 0.6, 0, Math.PI * 2);
+      ctx.stroke();
     }
     ctx.shadowBlur = 0;
     ctx.restore();
@@ -450,8 +489,11 @@ const drawTrapShoot: WeaponDrawFn = (ctx, anim, cs) => {
   ctx.save();
   ctx.fillStyle = 'rgba(220, 20, 60, 0.8)';
   ctx.beginPath();
-  ctx.moveTo(bx, by - 6); ctx.lineTo(bx + 5, by + 4); ctx.lineTo(bx - 5, by + 4);
-  ctx.closePath(); ctx.fill();
+  ctx.moveTo(bx, by - 6);
+  ctx.lineTo(bx + 5, by + 4);
+  ctx.lineTo(bx - 5, by + 4);
+  ctx.closePath();
+  ctx.fill();
   ctx.restore();
 };
 
@@ -467,8 +509,11 @@ const drawTrapStatus: WeaponDrawFn = (ctx, anim, cs) => {
   ctx.save();
   ctx.fillStyle = 'rgba(160, 60, 200, 0.8)';
   ctx.beginPath();
-  ctx.moveTo(bx, by - 6); ctx.lineTo(bx + 5, by + 4); ctx.lineTo(bx - 5, by + 4);
-  ctx.closePath(); ctx.fill();
+  ctx.moveTo(bx, by - 6);
+  ctx.lineTo(bx + 5, by + 4);
+  ctx.lineTo(bx - 5, by + 4);
+  ctx.closePath();
+  ctx.fill();
   ctx.restore();
 };
 
@@ -485,7 +530,9 @@ const drawRepairPlant: WeaponDrawFn = (ctx, anim, cs) => {
     ctx.fillStyle = '#44ff44';
     ctx.shadowColor = '#44ff44';
     ctx.shadowBlur = 8;
-    ctx.beginPath(); ctx.arc(bx, by, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(bx, by, 4, 0, Math.PI * 2);
+    ctx.fill();
     ctx.shadowBlur = 0;
     ctx.restore();
   } else {
@@ -529,18 +576,78 @@ interface WeaponSpeedConfig {
 }
 
 const WEAPON_SPEED: Record<string, WeaponSpeedConfig> = {
-  rifle:        { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.3 },  flashStagger: 0.2 },
-  gatling:      { projectile: 0.06, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.25 }, flashStagger: 0.15 },
-  missile:      { projectile: 0.04, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 },  flashStagger: 0.15 },
-  laser:        { projectile: 0.08, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.5 },  flashStagger: 0.1 },
-  beam:         { projectile: 0.06, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.5 },  flashStagger: 0.1 },
-  break:        { projectile: 0.06, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 },  flashStagger: 0.15 },
-  thunder:      { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.35 }, flashStagger: 0.15 },
-  sword:        { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.4 },  flashStagger: 0.15 },
-  hammer:       { projectile: 0.06, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 },  flashStagger: 0.15 },
-  trap_shoot:   { projectile: 0.05, impact: 0.08, flashAt: { phase: 'projectile', progress: 0.85 }, flashStagger: 0.0 },
-  trap_status:  { projectile: 0.05, impact: 0.08, flashAt: { phase: 'projectile', progress: 0.85 }, flashStagger: 0.0 },
-  repair_plant: { projectile: 0.05, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 },  flashStagger: 0.0 },
+  rifle: {
+    projectile: 0.05,
+    impact: 0.1,
+    flashAt: { phase: 'projectile', progress: 0.3 },
+    flashStagger: 0.2,
+  },
+  gatling: {
+    projectile: 0.06,
+    impact: 0.1,
+    flashAt: { phase: 'projectile', progress: 0.25 },
+    flashStagger: 0.15,
+  },
+  missile: {
+    projectile: 0.04,
+    impact: 0.06,
+    flashAt: { phase: 'impact', progress: 0.1 },
+    flashStagger: 0.15,
+  },
+  laser: {
+    projectile: 0.08,
+    impact: 0.1,
+    flashAt: { phase: 'projectile', progress: 0.5 },
+    flashStagger: 0.1,
+  },
+  beam: {
+    projectile: 0.06,
+    impact: 0.1,
+    flashAt: { phase: 'projectile', progress: 0.5 },
+    flashStagger: 0.1,
+  },
+  break: {
+    projectile: 0.06,
+    impact: 0.06,
+    flashAt: { phase: 'impact', progress: 0.1 },
+    flashStagger: 0.15,
+  },
+  thunder: {
+    projectile: 0.05,
+    impact: 0.1,
+    flashAt: { phase: 'projectile', progress: 0.35 },
+    flashStagger: 0.15,
+  },
+  sword: {
+    projectile: 0.05,
+    impact: 0.1,
+    flashAt: { phase: 'projectile', progress: 0.4 },
+    flashStagger: 0.15,
+  },
+  hammer: {
+    projectile: 0.06,
+    impact: 0.06,
+    flashAt: { phase: 'impact', progress: 0.1 },
+    flashStagger: 0.15,
+  },
+  trap_shoot: {
+    projectile: 0.05,
+    impact: 0.08,
+    flashAt: { phase: 'projectile', progress: 0.85 },
+    flashStagger: 0.0,
+  },
+  trap_status: {
+    projectile: 0.05,
+    impact: 0.08,
+    flashAt: { phase: 'projectile', progress: 0.85 },
+    flashStagger: 0.0,
+  },
+  repair_plant: {
+    projectile: 0.05,
+    impact: 0.06,
+    flashAt: { phase: 'impact', progress: 0.1 },
+    flashStagger: 0.0,
+  },
 };
 
 /** 武器アニメーションの描画を実行 */
@@ -564,7 +671,11 @@ export function hasImpactPhase(weaponId: string): boolean {
 }
 
 /** 武器IDからフラッシュ発火タイミングを取得 */
-export function getWeaponFlashAt(weaponId: string): { phase: 'projectile' | 'impact'; progress: number; stagger: number } {
+export function getWeaponFlashAt(weaponId: string): {
+  phase: 'projectile' | 'impact';
+  progress: number;
+  stagger: number;
+} {
   const cfg = WEAPON_SPEED[weaponId];
   if (!cfg) return { phase: 'projectile', progress: 0.5, stagger: 0.15 };
   return { ...cfg.flashAt, stagger: cfg.flashStagger };

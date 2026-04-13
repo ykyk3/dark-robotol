@@ -1,14 +1,26 @@
 import { CONFIG } from '../config';
 import {
-  BattlePhase, Team, MedabotState, BattleAction, ActionKind,
-  Position, HitResult, PartDef, WeaponDef,
+  BattlePhase,
+  Team,
+  MedabotState,
+  BattleAction,
+  ActionKind,
+  Position,
+  HitResult,
+  PartDef,
+  WeaponDef,
 } from '../models/types';
 import { createMedabot, isAlive, getPartBySlot, getMoveRange } from '../models/medabot';
 import { MEDABOTS } from '../data/medabots-db';
 import { getWeapon } from '../data/weapons-db';
 import {
-  getMovablePositions, getBlastPositions, getBlastShapePositions,
-  posEqual, getScanPositions, getTargetCells, getAutoTargetPreview,
+  getMovablePositions,
+  getBlastPositions,
+  getBlastShapePositions,
+  posEqual,
+  getScanPositions,
+  getTargetCells,
+  getAutoTargetPreview,
   isInTerritory,
 } from './grid';
 import { calcDamage } from './damage-calc';
@@ -32,7 +44,9 @@ export class BattleState {
   // 配置フェーズ
   private playerDefs: string[] = [];
   deployIndex = 0;
-  get deployTotal(): number { return this.playerDefs.length; }
+  get deployTotal(): number {
+    return this.playerDefs.length;
+  }
 
   init(playerIds: string[], enemyIds: string[]): void {
     this.visibility.reset();
@@ -63,7 +77,7 @@ export class BattleState {
   }
 
   getDeployableCells(): Position[] {
-    const occupied = new Set(this.playerTeam.map(u => `${u.position.x},${u.position.y}`));
+    const occupied = new Set(this.playerTeam.map((u) => `${u.position.x},${u.position.y}`));
     const cells: Position[] = [];
     for (let x = 0; x < CONFIG.TERRITORY_X; x++) {
       for (let y = 0; y < CONFIG.GRID_ROWS; y++) {
@@ -77,7 +91,7 @@ export class BattleState {
     if (this.phase !== BattlePhase.Deploy) return false;
     if (this.deployIndex >= this.playerDefs.length) return false;
     if (!isInTerritory(pos, Team.Player)) return false;
-    if (this.playerTeam.some(u => posEqual(u.position, pos))) return false;
+    if (this.playerTeam.some((u) => posEqual(u.position, pos))) return false;
 
     const def = MEDABOTS[this.playerDefs[this.deployIndex]];
     this.playerTeam.push(createMedabot(def, pos, Team.Player));
@@ -127,9 +141,15 @@ export class BattleState {
     }
   }
 
-  getAllBots(): MedabotState[] { return [...this.playerTeam, ...this.enemyTeam]; }
-  getAlivePlayerUnits(): MedabotState[] { return this.playerTeam.filter(isAlive); }
-  getAliveEnemyUnits(): MedabotState[] { return this.enemyTeam.filter(isAlive); }
+  getAllBots(): MedabotState[] {
+    return [...this.playerTeam, ...this.enemyTeam];
+  }
+  getAlivePlayerUnits(): MedabotState[] {
+    return this.playerTeam.filter(isAlive);
+  }
+  getAliveEnemyUnits(): MedabotState[] {
+    return this.enemyTeam.filter(isAlive);
+  }
 
   getCurrentUnit(): MedabotState | null {
     const units = this.phase === BattlePhase.PlayerTurn ? this.playerTeam : this.enemyTeam;
@@ -205,7 +225,16 @@ export class BattleState {
         unit.lastActionPartSlot = action.partSlot;
 
         if (weapon.blastShape === 'pick3' && action.targets) {
-          this.resolveAttack(unit, action.unitIndex, team, enemies, action.targets[0] ?? unit.position, part, weapon, action.targets);
+          this.resolveAttack(
+            unit,
+            action.unitIndex,
+            team,
+            enemies,
+            action.targets[0] ?? unit.position,
+            part,
+            weapon,
+            action.targets,
+          );
         } else if (action.target) {
           this.resolveAttack(unit, action.unitIndex, team, enemies, action.target, part, weapon);
         } else if (weapon.blastShape) {
@@ -232,7 +261,14 @@ export class BattleState {
         unit.lastActionPartSlot = action.partSlot;
         const power = part.trapPower ?? part.attackPower ?? 30;
         this.traps.push({ position: { ...action.target }, team, power });
-        eventBus.emit({ type: 'setDevice', unitIndex: action.unitIndex, team, origin: { ...unit.position }, target: action.target, weaponId: part.weaponType! });
+        eventBus.emit({
+          type: 'setDevice',
+          unitIndex: action.unitIndex,
+          team,
+          origin: { ...unit.position },
+          target: action.target,
+          weaponId: part.weaponType!,
+        });
         eventBus.emit({ type: 'message', text: `${unit.def.name}がトラップを設置した` });
         this.advanceUnit(team);
         break;
@@ -255,8 +291,17 @@ export class BattleState {
           const amount = part.healAmount ?? 20;
           unit.lastActionPartSlot = action.partSlot;
           healTarget.currentHp = Math.min(healTarget.def.hp, healTarget.currentHp + amount);
-          eventBus.emit({ type: 'heal', unitIndex: action.unitIndex, team, target: healTargetIdx, amount });
-          eventBus.emit({ type: 'message', text: `${unit.def.name}の${part.name}：${healTarget.def.name}を${amount}回復！` });
+          eventBus.emit({
+            type: 'heal',
+            unitIndex: action.unitIndex,
+            team,
+            target: healTargetIdx,
+            amount,
+          });
+          eventBus.emit({
+            type: 'message',
+            text: `${unit.def.name}の${part.name}：${healTarget.def.name}を${amount}回復！`,
+          });
         }
         this.advanceUnit(team);
         break;
@@ -270,8 +315,12 @@ export class BattleState {
   }
 
   private resolveAssist(
-    unit: MedabotState, unitIndex: number, team: Team,
-    _allies: MedabotState[], enemies: MedabotState[], part: PartDef,
+    unit: MedabotState,
+    unitIndex: number,
+    team: Team,
+    _allies: MedabotState[],
+    enemies: MedabotState[],
+    part: PartDef,
   ): void {
     const assistType = part.assistType;
     if (!assistType) return;
@@ -283,19 +332,26 @@ export class BattleState {
         const found: number[] = [];
         enemies.forEach((enemy, idx) => {
           if (!isAlive(enemy) || enemy.isConcealed) return;
-          if (scanArea.some(p => posEqual(p, enemy.position))) {
+          if (scanArea.some((p) => posEqual(p, enemy.position))) {
             vis.reveal(idx, CONFIG.SCAN_VISIBLE_DURATION);
             found.push(idx);
           }
         });
-        const foundPositions = found.map(i => ({ ...enemies[i].position }));
-        eventBus.emit({ type: 'scan', unitIndex, team, center: unit.position, found: foundPositions });
-        const foundNames = found.map(i => enemies[i].def.name).join('・');
+        const foundPositions = found.map((i) => ({ ...enemies[i].position }));
+        eventBus.emit({
+          type: 'scan',
+          unitIndex,
+          team,
+          center: unit.position,
+          found: foundPositions,
+        });
+        const foundNames = found.map((i) => enemies[i].def.name).join('・');
         eventBus.emit({
           type: 'message',
-          text: found.length > 0
-            ? `${unit.def.name}の${part.name}: ${foundNames}を発見！`
-            : `${unit.def.name}の${part.name}: 反応なし`,
+          text:
+            found.length > 0
+              ? `${unit.def.name}の${part.name}: ${foundNames}を発見！`
+              : `${unit.def.name}の${part.name}: 反応なし`,
         });
         break;
       }
@@ -304,7 +360,10 @@ export class BattleState {
         unit.isConcealed = true;
         unit.concealTurnsLeft = turns;
         eventBus.emit({ type: 'assist', unitIndex, team, assistType });
-        eventBus.emit({ type: 'message', text: `${unit.def.name}の${part.name}: ${turns}ターン隠蔽！` });
+        eventBus.emit({
+          type: 'message',
+          text: `${unit.def.name}の${part.name}: ${turns}ターン隠蔽！`,
+        });
         break;
       }
       case 'disarm': {
@@ -312,19 +371,28 @@ export class BattleState {
         unit.isDisarmed = true;
         unit.disarmTurnsLeft = turns;
         eventBus.emit({ type: 'assist', unitIndex, team, assistType });
-        eventBus.emit({ type: 'message', text: `${unit.def.name}の${part.name}: 射撃ダメージを軽減！` });
+        eventBus.emit({
+          type: 'message',
+          text: `${unit.def.name}の${part.name}: 射撃ダメージを軽減！`,
+        });
         break;
       }
       case 'doubleAction': {
         const allies = team === Team.Player ? this.playerTeam : this.enemyTeam;
         let nextAlly: MedabotState | null = null;
         for (let i = this.currentUnitIndex + 1; i < allies.length; i++) {
-          if (isAlive(allies[i]) && !allies[i].hasActed) { nextAlly = allies[i]; break; }
+          if (isAlive(allies[i]) && !allies[i].hasActed) {
+            nextAlly = allies[i];
+            break;
+          }
         }
         if (nextAlly) {
           nextAlly.hasDoubleAction = true;
           eventBus.emit({ type: 'assist', unitIndex, team, assistType });
-          eventBus.emit({ type: 'message', text: `${unit.def.name}の${part.name}: ${nextAlly.def.name}が2連続行動可能に！` });
+          eventBus.emit({
+            type: 'message',
+            text: `${unit.def.name}の${part.name}: ${nextAlly.def.name}が2連続行動可能に！`,
+          });
         } else {
           eventBus.emit({ type: 'message', text: `${unit.def.name}の${part.name}: 対象がいない…` });
         }
@@ -339,18 +407,26 @@ export class BattleState {
           }
         }
         eventBus.emit({ type: 'assist', unitIndex, team, assistType });
-        eventBus.emit({ type: 'message', text: jammed > 0
-          ? `${unit.def.name}の${part.name}: ${jammed}体の行動を妨害！`
-          : `${unit.def.name}の${part.name}: 妨害対象なし…` });
+        eventBus.emit({
+          type: 'message',
+          text:
+            jammed > 0
+              ? `${unit.def.name}の${part.name}: ${jammed}体の行動を妨害！`
+              : `${unit.def.name}の${part.name}: 妨害対象なし…`,
+        });
         break;
       }
     }
   }
 
   private resolveAttack(
-    attacker: MedabotState, attackerIndex: number, team: Team,
-    enemies: MedabotState[], target: Position,
-    part: PartDef, weapon: WeaponDef,
+    attacker: MedabotState,
+    attackerIndex: number,
+    team: Team,
+    enemies: MedabotState[],
+    target: Position,
+    part: PartDef,
+    weapon: WeaponDef,
     pickTargets?: Position[],
   ): void {
     // pick3: 指定ターゲットをそのまま使用 / 通常: blast計算
@@ -367,7 +443,7 @@ export class BattleState {
 
     const hits: HitResult[] = [];
     const messages: string[] = [];
-    const hitCount = pickTargets ? 1 : (weapon.hitCount || 1);
+    const hitCount = pickTargets ? 1 : weapon.hitCount || 1;
     const vis = team === Team.Player ? this.visibility : this.enemyVisibility;
 
     for (let h = 0; h < hitCount; h++) {
@@ -378,9 +454,16 @@ export class BattleState {
           // 解除状態: 射撃ダメージを1に固定
           if (enemy.isDisarmed && weapon.category === 'shooting') {
             enemy.currentHp = Math.max(0, enemy.currentHp - 1);
-            hits.push({ targetIndex: idx, targetTeam: enemy.team, damage: 1, destroyed: enemy.currentHp <= 0 });
+            hits.push({
+              targetIndex: idx,
+              targetTeam: enemy.team,
+              damage: 1,
+              destroyed: enemy.currentHp <= 0,
+            });
             vis.reveal(idx, CONFIG.SCAN_VISIBLE_DURATION);
-            messages.push(`${attacker.def.name}の${part.name}！${enemy.def.name}に1ダメージ！（解除）`);
+            messages.push(
+              `${attacker.def.name}の${part.name}！${enemy.def.name}に1ダメージ！（解除）`,
+            );
             if (enemy.currentHp <= 0) {
               eventBus.emit({ type: 'destroy', unitIndex: idx, team: enemy.team });
               messages.push(`${enemy.def.name}は機能停止した！`);
@@ -391,7 +474,9 @@ export class BattleState {
           result.targetIndex = idx;
           hits.push(result);
           vis.reveal(idx, CONFIG.SCAN_VISIBLE_DURATION);
-          messages.push(`${attacker.def.name}の${part.name}！${enemy.def.name}に${result.damage}ダメージ！`);
+          messages.push(
+            `${attacker.def.name}の${part.name}！${enemy.def.name}に${result.damage}ダメージ！`,
+          );
           if (result.destroyed) {
             eventBus.emit({ type: 'destroy', unitIndex: idx, team: enemy.team });
             messages.push(`${enemy.def.name}は機能停止した！`);
@@ -403,21 +488,38 @@ export class BattleState {
     if (team === Team.Player) {
       messages.push(`${hits.length}ヒット！`);
     }
-    eventBus.emit({ type: 'attack', unitIndex: attackerIndex, team, origin: { ...attacker.position }, target, targets: hitPositions, weaponId: weapon.id, hits, messages });
+    eventBus.emit({
+      type: 'attack',
+      unitIndex: attackerIndex,
+      team,
+      origin: { ...attacker.position },
+      target,
+      targets: hitPositions,
+      weaponId: weapon.id,
+      hits,
+      messages,
+    });
     this.checkVictory();
   }
 
   private checkTraps(unit: MedabotState, unitIndex: number, team: Team): void {
-    const triggered = this.traps.filter(t => t.team !== team && posEqual(t.position, unit.position));
+    const triggered = this.traps.filter(
+      (t) => t.team !== team && posEqual(t.position, unit.position),
+    );
     for (const trap of triggered) {
       const damage = Math.max(1, Math.floor(trap.power * 0.8));
       unit.currentHp = Math.max(0, unit.currentHp - damage);
-      eventBus.emit({ type: 'message', text: `${unit.def.name}がトラップを踏んだ！${damage}ダメージ！` });
+      eventBus.emit({
+        type: 'message',
+        text: `${unit.def.name}がトラップを踏んだ！${damage}ダメージ！`,
+      });
       if (unit.currentHp <= 0) {
         eventBus.emit({ type: 'destroy', unitIndex, team });
       }
     }
-    this.traps = this.traps.filter(t => !(t.team !== team && posEqual(t.position, unit.position)));
+    this.traps = this.traps.filter(
+      (t) => !(t.team !== team && posEqual(t.position, unit.position)),
+    );
   }
 
   advanceUnit(team: Team): void {
@@ -439,7 +541,10 @@ export class BattleState {
     this.preMovePosition = null;
     this.skipDeadUnits(team);
 
-    if (this.currentUnitIndex >= units.length || this.getAliveUnitsForTeam(team).every(u => u.hasActed)) {
+    if (
+      this.currentUnitIndex >= units.length ||
+      this.getAliveUnitsForTeam(team).every((u) => u.hasActed)
+    ) {
       this.endTurn(team);
     }
   }

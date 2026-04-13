@@ -1,4 +1,12 @@
-import { MedabotDef, MedabotState, Position, Team, ResolvedParts, PartDef, PartSlot } from './types';
+import {
+  MedabotDef,
+  MedabotState,
+  Position,
+  Team,
+  ResolvedParts,
+  PartDef,
+  PartSlot,
+} from './types';
 import { PARTS } from '../data/parts-db';
 
 export function createMedabot(def: MedabotDef, position: Position, team: Team): MedabotState {
@@ -68,14 +76,21 @@ export function canUseHead(bot: MedabotState): boolean {
 
 export function getPartBySlot(unit: { parts: ResolvedParts }, slot: PartSlot): PartDef {
   switch (slot) {
-    case PartSlot.Head: return unit.parts.head;
-    case PartSlot.RightArm: return unit.parts.rightArm;
-    case PartSlot.LeftArm: return unit.parts.leftArm;
-    case PartSlot.Legs: return unit.parts.legs;
+    case PartSlot.Head:
+      return unit.parts.head;
+    case PartSlot.RightArm:
+      return unit.parts.rightArm;
+    case PartSlot.LeftArm:
+      return unit.parts.leftArm;
+    case PartSlot.Legs:
+      return unit.parts.legs;
   }
 }
 
-export function getAttackRange(part: PartDef, weapon: { defaultRange: number } | undefined): number {
+export function getAttackRange(
+  part: PartDef,
+  weapon: { defaultRange: number } | undefined,
+): number {
   if (part.rangeOverride != null) return part.rangeOverride;
   return weapon?.defaultRange ?? 1;
 }

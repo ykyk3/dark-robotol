@@ -1,6 +1,15 @@
 import './style.css';
 import { BattleState } from './battle/battle-state';
-import { BattlePhase, Position, ActionKind, PartSlot, Team, BattleAction, MedabotState, GameEvent } from './models/types';
+import {
+  BattlePhase,
+  Position,
+  ActionKind,
+  PartSlot,
+  Team,
+  BattleAction,
+  MedabotState,
+  GameEvent,
+} from './models/types';
 import { CanvasRenderer } from './ui/canvas-renderer';
 import { HUD } from './ui/hud';
 import { ActionMenu, ActionSelection } from './ui/action-menu';
@@ -67,7 +76,7 @@ function initGame(): void {
   messageLog = new MessageLog(document.getElementById('message-log')!);
 
   unsubscribers.push(
-    eventBus.on(event => messageLog.handleEvent(event)),
+    eventBus.on((event) => messageLog.handleEvent(event)),
     eventBus.on(handleAnimEvent),
   );
 
@@ -101,9 +110,8 @@ function handleAnimEvent(event: GameEvent): void {
       break;
     case 'scan': {
       renderer.startScanEffect(event.center, event.team);
-      const flashColor = event.team === Team.Enemy
-        ? 'rgba(255, 100, 100, 0.4)'
-        : 'rgba(57, 255, 20, 0.4)';
+      const flashColor =
+        event.team === Team.Enemy ? 'rgba(255, 100, 100, 0.4)' : 'rgba(57, 255, 20, 0.4)';
       renderer.flash(event.found, flashColor, 30);
       break;
     }
@@ -114,7 +122,8 @@ function handleAnimEvent(event: GameEvent): void {
       break;
     case 'destroy': {
       const team = event.team === Team.Player ? state.playerTeam : state.enemyTeam;
-      if (team[event.unitIndex]) renderer.flash([team[event.unitIndex].position], 'rgba(255, 255, 255, 0.6)', 25);
+      if (team[event.unitIndex])
+        renderer.flash([team[event.unitIndex].position], 'rgba(255, 255, 255, 0.6)', 25);
       break;
     }
   }
@@ -124,7 +133,7 @@ function startBattle(): void {
   // 旧リスナー解除 → 再登録
   for (const unsub of unsubscribers) unsub();
   unsubscribers = [
-    eventBus.on(event => messageLog.handleEvent(event)),
+    eventBus.on((event) => messageLog.handleEvent(event)),
     eventBus.on(handleAnimEvent),
   ];
 
@@ -154,14 +163,16 @@ function renderLoop(): void {
 function updateUI(): void {
   hud.render(state);
   const isMoveTargeting = ui.pending?.kind === 'move';
-  const isAttackTargeting = ui.pending !== null &&
-    (ui.pending.kind === 'attack' || ui.pending.kind === 'setDevice');
-  const targeting = (isAttackTargeting || isMoveTargeting || ui.pickMax > 0)
-    ? {
-        pickProgress: ui.pickMax > 0 ? { current: ui.pickTargets.length, max: ui.pickMax } : undefined,
-        moveMode: isMoveTargeting,
-      }
-    : undefined;
+  const isAttackTargeting =
+    ui.pending !== null && (ui.pending.kind === 'attack' || ui.pending.kind === 'setDevice');
+  const targeting =
+    isAttackTargeting || isMoveTargeting || ui.pickMax > 0
+      ? {
+          pickProgress:
+            ui.pickMax > 0 ? { current: ui.pickTargets.length, max: ui.pickMax } : undefined,
+          moveMode: isMoveTargeting,
+        }
+      : undefined;
   const preview = ui.preview ? { cells: ui.previewCells.length, type: ui.previewType } : undefined;
   actionMenu.render(state, targeting, preview, ui.pending);
   updateHighlights();
@@ -169,8 +180,7 @@ function updateUI(): void {
   const el = document.querySelector('#battle-header .turn-info');
   if (!el) return;
   const unit = state.getCurrentUnit();
-  if (state.phase === BattlePhase.Deploy)
-    el.textContent = '配置フェーズ';
+  if (state.phase === BattlePhase.Deploy) el.textContent = '配置フェーズ';
   else if (state.phase === BattlePhase.PlayerTurn)
     el.textContent = `ターン${state.turnCount} - ${unit?.def.name ?? ''}`;
   else if (state.phase === BattlePhase.EnemyTurn)
@@ -253,7 +263,7 @@ function handleCellClick(cell: Position): void {
   // 移動先選択
   if (ui.pending.kind === 'move') {
     const movable = state.getMovableForCurrent();
-    if (movable.some(p => posEqual(p, cell))) {
+    if (movable.some((p) => posEqual(p, cell))) {
       ui.pending = null;
       ui.cursorPos = null;
       state.executeAction(moveAction(state.currentUnitIndex, cell));
@@ -268,9 +278,9 @@ function handleCellClick(cell: Position): void {
   if (ui.pickMax > 0 && ui.pending.kind === 'attack') {
     const part = getPartBySlot(unit, ui.pending.partSlot);
     const validTargets = state.getTargetsForPart(part);
-    if (!validTargets.some(p => posEqual(p, cell))) return;
+    if (!validTargets.some((p) => posEqual(p, cell))) return;
 
-    const existIdx = ui.pickTargets.findIndex(p => posEqual(p, cell));
+    const existIdx = ui.pickTargets.findIndex((p) => posEqual(p, cell));
     if (existIdx >= 0) {
       ui.pickTargets.splice(existIdx, 1);
       updateUI();
@@ -313,7 +323,7 @@ function buildCellAction(
     case 'setDevice': {
       const part = getPartBySlot(unit, sel.partSlot);
       const targets = state.getTargetsForPart(part);
-      if (!targets.some(p => posEqual(p, cell))) return null;
+      if (!targets.some((p) => posEqual(p, cell))) return null;
       const kind = sel.kind === 'attack' ? ActionKind.Attack : ActionKind.SetDevice;
       return { kind, unitIndex: idx, target: cell, partSlot: sel.partSlot };
     }
@@ -326,17 +336,50 @@ function onActionSelected(action: ActionSelection): void {
   ui.pending = action;
 
   switch (action.kind) {
-    case 'attack':    handleAttackAction(action); break;
-    case 'setDevice': initCursor(); updateUI(); break;
-    case 'assist':    handleAssistAction(action); break;
-    case 'guard':     ui.pending = null; submit({ kind: ActionKind.Guard, unitIndex: state.currentUnitIndex }); break;
-    case 'heal':      handleHealAction(action); break;
-    case 'move':      initCursor(); updateUI(); break;
-    case 'skip':      ui.pending = null; resetPick(); submit(skipAction(state.currentUnitIndex)); break;
-    case 'cancelMove':     ui.pending = null; ui.cursorPos = null; resetPick(); state.undoMove(); updateUI(); break;
-    case 'confirmPreview': handleConfirmPreview(); break;
-    case 'cancelPreview':  clearInputState(); updateUI(); break;
-    case 'cancel':         clearInputState(); updateUI(); break;
+    case 'attack':
+      handleAttackAction(action);
+      break;
+    case 'setDevice':
+      initCursor();
+      updateUI();
+      break;
+    case 'assist':
+      handleAssistAction(action);
+      break;
+    case 'guard':
+      ui.pending = null;
+      submit({ kind: ActionKind.Guard, unitIndex: state.currentUnitIndex });
+      break;
+    case 'heal':
+      handleHealAction(action);
+      break;
+    case 'move':
+      initCursor();
+      updateUI();
+      break;
+    case 'skip':
+      ui.pending = null;
+      resetPick();
+      submit(skipAction(state.currentUnitIndex));
+      break;
+    case 'cancelMove':
+      ui.pending = null;
+      ui.cursorPos = null;
+      resetPick();
+      state.undoMove();
+      updateUI();
+      break;
+    case 'confirmPreview':
+      handleConfirmPreview();
+      break;
+    case 'cancelPreview':
+      clearInputState();
+      updateUI();
+      break;
+    case 'cancel':
+      clearInputState();
+      updateUI();
+      break;
   }
 }
 
@@ -349,7 +392,11 @@ function handleAttackAction(action: ActionSelection & { kind: 'attack' }): void 
   // 自動照準: プレビューへ
   const autoShapes = ['same_col', 'mirror_col', 'front4', 'front2', 'vertical_line'];
   if (weapon?.blastShape && autoShapes.includes(weapon.blastShape)) {
-    enterPreview({ kind: ActionKind.Attack, unitIndex: state.currentUnitIndex, partSlot: action.partSlot });
+    enterPreview({
+      kind: ActionKind.Attack,
+      unitIndex: state.currentUnitIndex,
+      partSlot: action.partSlot,
+    });
     return;
   }
 
@@ -373,10 +420,18 @@ function handleAssistAction(action: ActionSelection & { kind: 'assist' }): void 
   if (!unit) return;
   const part = getPartBySlot(unit, action.partSlot);
   if (part.assistType === 'scan') {
-    enterPreview({ kind: ActionKind.Assist, unitIndex: state.currentUnitIndex, partSlot: action.partSlot });
+    enterPreview({
+      kind: ActionKind.Assist,
+      unitIndex: state.currentUnitIndex,
+      partSlot: action.partSlot,
+    });
   } else {
     ui.pending = null;
-    submit({ kind: ActionKind.Assist, unitIndex: state.currentUnitIndex, partSlot: action.partSlot });
+    submit({
+      kind: ActionKind.Assist,
+      unitIndex: state.currentUnitIndex,
+      partSlot: action.partSlot,
+    });
   }
 }
 
@@ -385,7 +440,8 @@ function handleHealAction(action: ActionSelection & { kind: 'heal' }): void {
   let lowestHp = Infinity;
   state.playerTeam.forEach((u, i) => {
     if (isAlive(u) && u.currentHp < u.def.hp && u.currentHp < lowestHp) {
-      lowestHp = u.currentHp; lowestIdx = i;
+      lowestHp = u.currentHp;
+      lowestIdx = i;
     }
   });
   ui.pending = null;
@@ -402,12 +458,18 @@ function handleConfirmPreview(): void {
 
 function initCursor(): void {
   const unit = state.getCurrentUnit();
-  if (!unit) { ui.cursorPos = null; return; }
+  if (!unit) {
+    ui.cursorPos = null;
+    return;
+  }
 
   if (ui.pending?.kind === 'move') {
     ui.cursorPos = { ...unit.position };
-  } else if (ui.pending && 'partSlot' in ui.pending &&
-    (ui.pending.kind === 'attack' || ui.pending.kind === 'setDevice')) {
+  } else if (
+    ui.pending &&
+    'partSlot' in ui.pending &&
+    (ui.pending.kind === 'attack' || ui.pending.kind === 'setDevice')
+  ) {
     const part = getPartBySlot(unit, ui.pending.partSlot);
     const targets = state.getTargetsForPart(part);
     if (targets.length > 0) {
@@ -417,7 +479,10 @@ function initCursor(): void {
         const dx = t.x - unit.position.x;
         const dy = t.y - unit.position.y;
         const dist = dx * dx + dy * dy;
-        if (dist < minDist) { minDist = dist; nearest = t; }
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = t;
+        }
       }
       ui.cursorPos = { ...nearest };
     } else {
@@ -487,16 +552,35 @@ function onKeyDown(e: KeyboardEvent): void {
   if (state.phase === BattlePhase.Deploy) {
     if (!ui.cursorPos) return;
     switch (key) {
-      case 'ArrowUp': case 'w': case 'W':
-        e.preventDefault(); moveCursor(0, -1); return;
-      case 'ArrowDown': case 's': case 'S':
-        e.preventDefault(); moveCursor(0, 1); return;
-      case 'ArrowLeft': case 'a': case 'A':
-        e.preventDefault(); moveCursor(-1, 0); return;
-      case 'ArrowRight': case 'd': case 'D':
-        e.preventDefault(); moveCursor(1, 0); return;
-      case ' ': case 'Enter':
-        e.preventDefault(); handleCellClick(ui.cursorPos); return;
+      case 'ArrowUp':
+      case 'w':
+      case 'W':
+        e.preventDefault();
+        moveCursor(0, -1);
+        return;
+      case 'ArrowDown':
+      case 's':
+      case 'S':
+        e.preventDefault();
+        moveCursor(0, 1);
+        return;
+      case 'ArrowLeft':
+      case 'a':
+      case 'A':
+        e.preventDefault();
+        moveCursor(-1, 0);
+        return;
+      case 'ArrowRight':
+      case 'd':
+      case 'D':
+        e.preventDefault();
+        moveCursor(1, 0);
+        return;
+      case ' ':
+      case 'Enter':
+        e.preventDefault();
+        handleCellClick(ui.cursorPos);
+        return;
     }
     return;
   }
@@ -522,16 +606,35 @@ function onKeyDown(e: KeyboardEvent): void {
     }
     if (ui.cursorPos) {
       switch (key) {
-        case 'ArrowUp': case 'w': case 'W':
-          e.preventDefault(); moveCursor(0, -1); return;
-        case 'ArrowDown': case 's': case 'S':
-          e.preventDefault(); moveCursor(0, 1); return;
-        case 'ArrowLeft': case 'a': case 'A':
-          e.preventDefault(); moveCursor(-1, 0); return;
-        case 'ArrowRight': case 'd': case 'D':
-          e.preventDefault(); moveCursor(1, 0); return;
-        case ' ': case 'Enter':
-          e.preventDefault(); handleCellClick(ui.cursorPos); return;
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
+          e.preventDefault();
+          moveCursor(0, -1);
+          return;
+        case 'ArrowDown':
+        case 's':
+        case 'S':
+          e.preventDefault();
+          moveCursor(0, 1);
+          return;
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
+          e.preventDefault();
+          moveCursor(-1, 0);
+          return;
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
+          e.preventDefault();
+          moveCursor(1, 0);
+          return;
+        case ' ':
+        case 'Enter':
+          e.preventDefault();
+          handleCellClick(ui.cursorPos);
+          return;
       }
     }
     return;
@@ -612,7 +715,15 @@ function afterAction(): void {
   if (state.phase === BattlePhase.EnemyTurn) {
     updateUI();
     ui.aiRunning = true;
-    executeAiTurnAnimated(state, () => updateUI(), 300, async () => { await renderer.waitForAnimation(); flushPendingMessages(); }).then(() => {
+    executeAiTurnAnimated(
+      state,
+      () => updateUI(),
+      300,
+      async () => {
+        await renderer.waitForAnimation();
+        flushPendingMessages();
+      },
+    ).then(() => {
       ui.aiRunning = false;
       if (state.phase === BattlePhase.Victory || state.phase === BattlePhase.Defeat) {
         showResult();
@@ -651,14 +762,14 @@ function buildTeamSelectUI(): void {
     btn.textContent = preset.name;
     btn.addEventListener('click', () => {
       selectedPlayerPreset = i;
-      playerList.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('selected'));
+      playerList.querySelectorAll('.preset-btn').forEach((b) => b.classList.remove('selected'));
       btn.classList.add('selected');
-      playerDetail.textContent = preset.team.map(id => MEDABOTS[id]?.name ?? id).join(' / ');
+      playerDetail.textContent = preset.team.map((id) => MEDABOTS[id]?.name ?? id).join(' / ');
     });
     playerList.appendChild(btn);
   });
 
-  playerDetail.textContent = ALL_PRESETS[0].team.map(id => MEDABOTS[id]?.name ?? id).join(' / ');
+  playerDetail.textContent = ALL_PRESETS[0].team.map((id) => MEDABOTS[id]?.name ?? id).join(' / ');
   playerGroup.appendChild(playerList);
   playerGroup.appendChild(playerDetail);
 
@@ -690,7 +801,9 @@ function initLogResize(): void {
     log.style.height = `${Math.max(40, Math.min(400, startH + delta))}px`;
   });
 
-  window.addEventListener('mouseup', () => { dragging = false; });
+  window.addEventListener('mouseup', () => {
+    dragging = false;
+  });
 }
 
 document.addEventListener('DOMContentLoaded', initGame);

@@ -58,6 +58,7 @@ main.ts は3層のステートマシンを管理する:
    - `cursorPos`: キーボードカーソル位置
 
 行動パイプライン:
+
 ```
 onActionSelected() → pendingAction設定 → ハイライト表示
   → handleCellClick() → buildCellAction() → enterPreview()
@@ -81,6 +82,7 @@ onActionSelected() → pendingAction設定 → ハイライト表示
 **行動タイプ** (`ActionType`): 原作準拠の8種（うつ/ねらいうち/なぐる/がむしゃら/まもる/なおす/たすける/しかける）。各パーツの `actionType` フィールドで決まる。
 
 **ダメージ計算** (`damage-calc.ts`):
+
 - 命中判定: `accuracy - evasion - disruptPenalty >= random(0-100)`
 - ダメージ: `floor(power × (1 - defense/(defense+100)) × variance(0.85~1.15))`
 - 特殊効果: `antiArmor` は防御値の30%を攻撃力に加算、`ignoreDefense` は防御無視
@@ -91,6 +93,7 @@ onActionSelected() → pendingAction設定 → ハイライト表示
 ### データ定義の連携
 
 メダロット → パーツ → 武器 の3層参照:
+
 - `medabots.json`: 各ロボが `head/rightArm/leftArm/legs` でパーツIDを参照 + `presets` でチーム構成を定義
 - `parts.json`: 攻撃系パーツは `weaponType` で武器IDを参照
 - `weapons.json`: 射程・範囲・特殊効果を定義

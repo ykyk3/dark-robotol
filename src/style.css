@@ -18,7 +18,8 @@
   --border: #2a2a4e;
 }
 
-html, body {
+html,
+body {
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -52,7 +53,9 @@ html, body {
 #title-screen h1 {
   font-size: 36px;
   color: var(--accent-red);
-  text-shadow: 0 0 20px rgba(220, 20, 60, 0.6), 0 0 40px rgba(220, 20, 60, 0.3);
+  text-shadow:
+    0 0 20px rgba(220, 20, 60, 0.6),
+    0 0 40px rgba(220, 20, 60, 0.3);
   letter-spacing: 4px;
   animation: glitch 3s infinite;
 }
@@ -63,11 +66,23 @@ html, body {
 }
 
 @keyframes glitch {
-  0%, 90%, 100% { transform: translate(0); }
-  92% { transform: translate(-2px, 1px); }
-  94% { transform: translate(2px, -1px); }
-  96% { transform: translate(-1px, -1px); }
-  98% { transform: translate(1px, 1px); }
+  0%,
+  90%,
+  100% {
+    transform: translate(0);
+  }
+  92% {
+    transform: translate(-2px, 1px);
+  }
+  94% {
+    transform: translate(2px, -1px);
+  }
+  96% {
+    transform: translate(-1px, -1px);
+  }
+  98% {
+    transform: translate(1px, 1px);
+  }
 }
 
 .btn {
@@ -279,10 +294,22 @@ html, body {
   width: 100%;
 }
 
-.cross-top    { grid-column: 2; grid-row: 1; }
-.cross-left   { grid-column: 1; grid-row: 2; }
-.cross-right  { grid-column: 3; grid-row: 2; }
-.cross-bottom { grid-column: 2; grid-row: 3; }
+.cross-top {
+  grid-column: 2;
+  grid-row: 1;
+}
+.cross-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+.cross-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+.cross-bottom {
+  grid-column: 2;
+  grid-row: 3;
+}
 
 .action-cross .action-btn {
   width: 100%;
