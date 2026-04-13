@@ -1,6 +1,13 @@
 import { Position } from '../models/types';
 import { CONFIG } from '../config';
 
+/** 武器固有の一時データ型 */
+export type GatlingExtra = { dx: number; dy: number; delay: number }[];
+export type MissileExtra = { from: Position; to: Position }[];
+export type ThunderExtra = { px: number; py: number }[][];
+
+export type WeaponExtra = GatlingExtra | MissileExtra | ThunderExtra;
+
 export interface WeaponAnimation {
   weaponId: string;
   origin: Position;
@@ -14,7 +21,7 @@ export interface WeaponAnimation {
   /** 汎用フラッシュの発火済みターゲット数 */
   flashFiredCount: number;
   /** 武器固有の一時データ（稲妻の折れ線座標など） */
-  extra?: unknown;
+  extra?: WeaponExtra;
 }
 
 export type WeaponDrawFn = (
@@ -119,7 +126,7 @@ const drawGatling: WeaponDrawFn = (ctx, anim, cs) => {
       delay: Math.random() * 0.3,
     }));
   }
-  const sparks = anim.extra as { dx: number; dy: number; delay: number }[];
+  const sparks = anim.extra as GatlingExtra;
 
   ctx.save();
   for (let i = 0; i < n; i++) {
@@ -152,7 +159,7 @@ const drawMissile: WeaponDrawFn = (ctx, anim, cs) => {
     }
     anim.extra = pairs;
   }
-  const pairs = anim.extra as { from: Position; to: Position }[];
+  const pairs = anim.extra as MissileExtra;
 
   if (anim.phase === 'projectile') {
     ctx.save();
@@ -321,7 +328,7 @@ const drawThunder: WeaponDrawFn = (ctx, anim, cs) => {
     }
     anim.extra = paths;
   }
-  const paths = anim.extra as { px: number; py: number }[][];
+  const paths = anim.extra as ThunderExtra;
   const t = anim.progress;
 
   ctx.save();

@@ -8,7 +8,7 @@ export type ActionSelection =
   | { kind: 'assist'; partSlot: PartSlot }
   | { kind: 'setDevice'; partSlot: PartSlot }
   | { kind: 'guard' }
-  | { kind: 'heal' }
+  | { kind: 'heal'; partSlot: PartSlot }
   | { kind: 'cancel' }
   | { kind: 'cancelMove' }
   | { kind: 'move' }
@@ -103,7 +103,7 @@ export class ActionMenu {
       if (targeting.moveMode) {
         const span = document.createElement('span');
         span.style.cssText = 'color: var(--accent-blue); padding: 4px;';
-        span.textContent = '移動先を選択 (1マス)';
+        span.textContent = '移動先を選択';
         this.container.appendChild(span);
       } else if (targeting.pickProgress) {
         const span = document.createElement('span');
@@ -125,7 +125,7 @@ export class ActionMenu {
       case 'まもる':
         return { kind: 'guard' };
       case 'なおす':
-        return { kind: 'heal' };
+        return { kind: 'heal', partSlot: slot };
       case 'たすける':
         return { kind: 'assist', partSlot: slot };
       case 'しかける':

@@ -170,6 +170,7 @@ export interface BattleAction {
   target?: Position;
   targets?: Position[];  // 複数対象攻撃（ライフル pick3）
   partSlot?: PartSlot;   // どのパーツで行動するか
+  targetUnitIndex?: number;  // 回復対象のユニットインデックス
 }
 
 export type GameEvent =

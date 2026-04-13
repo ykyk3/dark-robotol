@@ -1,4 +1,4 @@
-import { MedabotDef, MedabotState, Position, Team, ResolvedParts, PartDef } from './types';
+import { MedabotDef, MedabotState, Position, Team, ResolvedParts, PartDef, PartSlot } from './types';
 import { PARTS } from '../data/parts-db';
 
 export function createMedabot(def: MedabotDef, position: Position, team: Team): MedabotState {
@@ -24,12 +24,20 @@ export function createMedabot(def: MedabotDef, position: Position, team: Team): 
 }
 
 function resolveParts(def: MedabotDef): ResolvedParts {
-  return {
-    head: PARTS[def.head],
-    rightArm: PARTS[def.rightArm],
-    leftArm: PARTS[def.leftArm],
-    legs: PARTS[def.legs],
-  };
+  const head = PARTS[def.head];
+  const rightArm = PARTS[def.rightArm];
+  const leftArm = PARTS[def.leftArm];
+  const legs = PARTS[def.legs];
+  const missing = [
+    !head && def.head,
+    !rightArm && def.rightArm,
+    !leftArm && def.leftArm,
+    !legs && def.legs,
+  ].filter(Boolean);
+  if (missing.length > 0) {
+    throw new Error(`[${def.id}] パーツ未定義: ${missing.join(', ')}`);
+  }
+  return { head, rightArm, leftArm, legs };
 }
 
 export function isAlive(bot: MedabotState): boolean {
@@ -56,6 +64,15 @@ export function getEvasion(bot: MedabotState): number {
 
 export function canUseHead(bot: MedabotState): boolean {
   return bot.parts.head.actionType != null;
+}
+
+export function getPartBySlot(unit: { parts: ResolvedParts }, slot: PartSlot): PartDef {
+  switch (slot) {
+    case PartSlot.Head: return unit.parts.head;
+    case PartSlot.RightArm: return unit.parts.rightArm;
+    case PartSlot.LeftArm: return unit.parts.leftArm;
+    case PartSlot.Legs: return unit.parts.legs;
+  }
 }
 
 export function getAttackRange(part: PartDef, weapon: { defaultRange: number } | undefined): number {

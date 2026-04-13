@@ -1,7 +1,7 @@
 import { BattleState } from './battle-state';
 import { BattlePhase, ActionKind, PartSlot, BattleAction, MedabotState, Team } from '../models/types';
 import { moveAction, attackAction, guardAction, skipAction } from '../models/action';
-import { isAlive, canUseHead } from '../models/medabot';
+import { isAlive, canUseHead, getMoveRange } from '../models/medabot';
 import {
   getMovablePositions, posEqual, manhattan,
   getBlastShapePositions, getMeleeTargets, getShootingTargets,
@@ -29,9 +29,9 @@ function planUnitActions(state: BattleState): BattleAction[] {
   const visible = getVisiblePlayers(state);
   const actions: BattleAction[] = [];
 
-  // ── 1) 移動 (1マス) ──
+  // ── 1) 移動（脚部 moveRange に応じる） ──
   if (!state.preMovePosition) {
-    const movable = getMovablePositions(unit, state.getAllBots(), 1);
+    const movable = getMovablePositions(unit, state.getAllBots(), getMoveRange(unit));
     if (movable.length > 0) {
       if (visible.length > 0) {
         let bestPos = unit.position;
@@ -121,13 +121,31 @@ function planAttack(
     // pick3
     if (weapon.blastShape === 'pick3') {
       if (visible.length > 0) {
-        const targets = visible.slice(0, 3).map(({ unit: p }) => ({ ...p.position }));
-        while (targets.length < 3) targets.push({ ...targets[0] });
+        const targets: { x: number; y: number }[] = visible.slice(0, 3).map(({ unit: p }) => ({ ...p.position }));
+        // 3枠に満たない分は敵陣のランダムな空きマスで埋める（重複禁止）
+        if (targets.length < 3) {
+          const area = getShootingTargets(Team.Enemy);
+          const isTaken = (p: { x: number; y: number }) => targets.some(t => posEqual(t, p));
+          const candidates = area.filter(p => !isTaken(p));
+          while (targets.length < 3 && candidates.length > 0) {
+            const idx2 = Math.floor(Math.random() * candidates.length);
+            targets.push(candidates.splice(idx2, 1)[0]);
+          }
+        }
         return { kind: ActionKind.Attack, unitIndex: idx, targets, partSlot: slot };
       }
       if (Math.random() < 0.2) {
         const area = getShootingTargets(Team.Enemy);
-        return { kind: ActionKind.Attack, unitIndex: idx, targets: [pick(area), pick(area), pick(area)], partSlot: slot };
+        // 重複なしで3マスランダム抽出
+        const pool = [...area];
+        const targets: { x: number; y: number }[] = [];
+        for (let k = 0; k < 3 && pool.length > 0; k++) {
+          const idx2 = Math.floor(Math.random() * pool.length);
+          targets.push(pool.splice(idx2, 1)[0]);
+        }
+        if (targets.length > 0) {
+          return { kind: ActionKind.Attack, unitIndex: idx, targets, partSlot: slot };
+        }
       }
       continue;
     }

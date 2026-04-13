@@ -29,14 +29,27 @@ export class HUD {
     if (hpPercent <= 25) barClass = 'critical';
     else if (hpPercent <= 50) barClass = 'low';
 
-    card.innerHTML = `
-      <div class="name">${unit.def.name}</div>
-      <div class="hp-bar"><div class="hp-bar-fill ${barClass}" style="width: ${hpPercent}%"></div></div>
-      <div class="hp-text">HP ${unit.currentHp}/${unit.def.hp}</div>
-      <div class="hp-text" style="margin-top:2px">
-        右:${unit.parts.rightArm.name} 左:${unit.parts.leftArm.name}
-      </div>
-    `;
+    const nameEl = document.createElement('div');
+    nameEl.className = 'name';
+    nameEl.textContent = unit.def.name;
+
+    const hpBar = document.createElement('div');
+    hpBar.className = 'hp-bar';
+    const hpFill = document.createElement('div');
+    hpFill.className = `hp-bar-fill ${barClass}`;
+    hpFill.style.width = `${hpPercent}%`;
+    hpBar.appendChild(hpFill);
+
+    const hpText = document.createElement('div');
+    hpText.className = 'hp-text';
+    hpText.textContent = `HP ${unit.currentHp}/${unit.def.hp}`;
+
+    const partsText = document.createElement('div');
+    partsText.className = 'hp-text';
+    partsText.style.marginTop = '2px';
+    partsText.textContent = `右:${unit.parts.rightArm.name} 左:${unit.parts.leftArm.name}`;
+
+    card.append(nameEl, hpBar, hpText, partsText);
 
     if (isAlive(unit)) card.addEventListener('click', () => this.onUnitClick(index));
     return card;

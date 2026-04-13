@@ -20,8 +20,8 @@ export function guardAction(unitIndex: number): BattleAction {
   return { kind: ActionKind.Guard, unitIndex };
 }
 
-export function healAction(unitIndex: number, targetUnitIndex: number): BattleAction {
-  return { kind: ActionKind.Heal, unitIndex, target: { x: targetUnitIndex, y: 0 } };
+export function healAction(unitIndex: number, targetUnitIndex: number, partSlot: PartSlot): BattleAction {
+  return { kind: ActionKind.Heal, unitIndex, targetUnitIndex, partSlot };
 }
 
 export function skipAction(unitIndex: number): BattleAction {

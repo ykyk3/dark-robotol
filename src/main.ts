@@ -1,30 +1,19 @@
 import './style.css';
 import { BattleState } from './battle/battle-state';
-import { BattlePhase, Position, ActionKind, PartSlot, Team } from './models/types';
+import { BattlePhase, Position, ActionKind, PartSlot, Team, BattleAction, MedabotState, GameEvent } from './models/types';
 import { CanvasRenderer } from './ui/canvas-renderer';
 import { HUD } from './ui/hud';
 import { ActionMenu, ActionSelection } from './ui/action-menu';
 import { MessageLog } from './ui/message-log';
 import { executeAiTurnAnimated } from './battle/ai';
 import { eventBus } from './utils/event-bus';
-import { isAlive, canUseHead } from './models/medabot';
+import { isAlive, canUseHead, getPartBySlot } from './models/medabot';
 import { posEqual, getAutoTargetPreview, getBlastPositions, getScanPositions } from './battle/grid';
 import { moveAction, healAction, skipAction } from './models/action';
 import { getWeapon } from './data/weapons-db';
 import { CONFIG } from './config';
 import { ALL_PRESETS, MEDABOTS } from './data/medabots-db';
 import { pick } from './utils/random';
-
-// ── helpers ──
-
-function getPartFromSlot(unit: { parts: import('./models/types').ResolvedParts }, slot: PartSlot) {
-  switch (slot) {
-    case PartSlot.Head: return unit.parts.head;
-    case PartSlot.RightArm: return unit.parts.rightArm;
-    case PartSlot.LeftArm: return unit.parts.leftArm;
-    default: return unit.parts.leftArm;
-  }
-}
 
 // ── state ──
 
@@ -33,23 +22,40 @@ let renderer: CanvasRenderer;
 let hud: HUD;
 let actionMenu: ActionMenu;
 let messageLog: MessageLog;
-let pendingAction: ActionSelection | null = null;
-let previewAction: import('./models/types').BattleAction | null = null;
-let previewCells: Position[] = [];
-let previewType: 'attack' | 'scan' = 'attack';
 let selectedPlayerPreset = 0;
-let aiRunning = false;
 
-// pick3 用
-let pickTargets: Position[] = [];
-let pickMax = 0;
-let pickPartSlot: PartSlot | null = null;
+/** 入力・UI に関連する一時状態 */
+const ui = {
+  pending: null as ActionSelection | null,
+  preview: null as BattleAction | null,
+  previewCells: [] as Position[],
+  previewType: 'attack' as 'attack' | 'scan',
+  aiRunning: false,
+  cursorPos: null as Position | null,
+  // pick3
+  pickTargets: [] as Position[],
+  pickMax: 0,
+  pickPartSlot: null as PartSlot | null,
+  // アニメーション完了後に表示するメッセージ
+  pendingMessages: [] as string[],
+};
 
-// キーボードカーソル
-let cursorPos: Position | null = null;
+// eventBus リスナー解除関数
+let unsubscribers: (() => void)[] = [];
 
-// アニメーション完了後に表示するメッセージ
-let pendingAttackMessages: string[] = [];
+function resetPick(): void {
+  ui.pickTargets = [];
+  ui.pickMax = 0;
+  ui.pickPartSlot = null;
+}
+
+function clearInputState(): void {
+  ui.pending = null;
+  ui.preview = null;
+  ui.previewCells = [];
+  ui.cursorPos = null;
+  resetPick();
+}
 
 // ── init ──
 
@@ -60,8 +66,10 @@ function initGame(): void {
   actionMenu = new ActionMenu(document.getElementById('action-menu')!, onActionSelected);
   messageLog = new MessageLog(document.getElementById('message-log')!);
 
-  eventBus.on(event => messageLog.handleEvent(event));
-  eventBus.on(handleAnimEvent);
+  unsubscribers.push(
+    eventBus.on(event => messageLog.handleEvent(event)),
+    eventBus.on(handleAnimEvent),
+  );
 
   canvas.addEventListener('click', onCanvasClick);
   document.addEventListener('keydown', onKeyDown);
@@ -72,10 +80,10 @@ function initGame(): void {
   renderLoop();
 }
 
-function handleAnimEvent(event: import('./models/types').GameEvent): void {
+function handleAnimEvent(event: GameEvent): void {
   switch (event.type) {
     case 'attack':
-      pendingAttackMessages = event.messages;
+      ui.pendingMessages = event.messages;
       renderer.startWeaponAnim({
         weaponId: event.weaponId,
         origin: event.origin,
@@ -108,6 +116,13 @@ function handleAnimEvent(event: import('./models/types').GameEvent): void {
 }
 
 function startBattle(): void {
+  // 旧リスナー解除 → 再登録
+  for (const unsub of unsubscribers) unsub();
+  unsubscribers = [
+    eventBus.on(event => messageLog.handleEvent(event)),
+    eventBus.on(handleAnimEvent),
+  ];
+
   document.getElementById('title-screen')!.style.display = 'none';
   document.getElementById('battle-screen')!.classList.add('active');
   document.getElementById('result-overlay')!.classList.remove('active');
@@ -118,12 +133,9 @@ function startBattle(): void {
   const enemyTeam = pick(remaining).team;
 
   state.init(playerTeam, enemyTeam);
-  pendingAction = null;
-  previewAction = null;
-  previewCells = [];
-  cursorPos = { x: 2, y: 2 };
-  resetPick();
-  aiRunning = false;
+  clearInputState();
+  ui.cursorPos = { x: 2, y: 2 };
+  ui.aiRunning = false;
   updateUI();
 }
 
@@ -136,17 +148,17 @@ function renderLoop(): void {
 
 function updateUI(): void {
   hud.render(state);
-  const isMoveTargeting = pendingAction?.kind === 'move';
-  const isAttackTargeting = pendingAction !== null &&
-    (pendingAction.kind === 'attack' || pendingAction.kind === 'setDevice');
-  const targeting = (isAttackTargeting || isMoveTargeting || pickMax > 0)
+  const isMoveTargeting = ui.pending?.kind === 'move';
+  const isAttackTargeting = ui.pending !== null &&
+    (ui.pending.kind === 'attack' || ui.pending.kind === 'setDevice');
+  const targeting = (isAttackTargeting || isMoveTargeting || ui.pickMax > 0)
     ? {
-        pickProgress: pickMax > 0 ? { current: pickTargets.length, max: pickMax } : undefined,
+        pickProgress: ui.pickMax > 0 ? { current: ui.pickTargets.length, max: ui.pickMax } : undefined,
         moveMode: isMoveTargeting,
       }
     : undefined;
-  const preview = previewAction ? { cells: previewCells.length, type: previewType } : undefined;
-  actionMenu.render(state, targeting, preview, pendingAction);
+  const preview = ui.preview ? { cells: ui.previewCells.length, type: ui.previewType } : undefined;
+  actionMenu.render(state, targeting, preview, ui.pending);
   updateHighlights();
 
   const el = document.querySelector('#battle-header .turn-info');
@@ -162,14 +174,14 @@ function updateUI(): void {
 
 function updateHighlights(): void {
   renderer.clearHighlights();
-  renderer.cursorCell = cursorPos;
+  renderer.cursorCell = ui.cursorPos;
 
   // プレビュー中
-  if (previewAction && previewCells.length > 0) {
-    if (previewType === 'scan') {
-      renderer.highlightScanRange = previewCells;
+  if (ui.preview && ui.previewCells.length > 0) {
+    if (ui.previewType === 'scan') {
+      renderer.highlightScanRange = ui.previewCells;
     } else {
-      renderer.highlightAttackRange = previewCells;
+      renderer.highlightAttackRange = ui.previewCells;
     }
     return;
   }
@@ -185,15 +197,15 @@ function updateHighlights(): void {
   if (!unit) return;
 
   // 移動ターゲット選択中
-  if (pendingAction?.kind === 'move') {
+  if (ui.pending?.kind === 'move') {
     renderer.highlightMoveRange = state.getMovableForCurrent();
     return;
   }
 
   // アクションフェーズ（ターゲット選択中）
-  if (!pendingAction) return;
-  if (pendingAction.kind === 'attack' || pendingAction.kind === 'setDevice') {
-    const part = getPartFromSlot(unit, pendingAction.partSlot);
+  if (!ui.pending) return;
+  if (ui.pending.kind === 'attack' || ui.pending.kind === 'setDevice') {
+    const part = getPartBySlot(unit, ui.pending.partSlot);
     const weapon = part.weaponType ? getWeapon(part.weaponType) : undefined;
 
     if (weapon?.blastShape && weapon.blastShape !== 'pick3') {
@@ -202,8 +214,8 @@ function updateHighlights(): void {
       renderer.highlightAttackRange = state.getTargetsForPart(part);
     }
 
-    if (pickTargets.length > 0) {
-      renderer.highlightSelected = [...pickTargets];
+    if (ui.pickTargets.length > 0) {
+      renderer.highlightSelected = [...ui.pickTargets];
     }
   }
 }
@@ -211,8 +223,8 @@ function updateHighlights(): void {
 // ── input ──
 
 function onCanvasClick(e: MouseEvent): void {
-  if (aiRunning) return;
-  if (previewAction) return;
+  if (ui.aiRunning) return;
+  if (ui.preview) return;
   const cell = renderer.getCellFromPixel(e.clientX, e.clientY);
   if (!cell) return;
   handleCellClick(cell);
@@ -222,7 +234,7 @@ function handleCellClick(cell: Position): void {
   // ── 配置フェーズ ──
   if (state.phase === BattlePhase.Deploy) {
     if (state.deployUnit(cell)) {
-      if (state.phase !== BattlePhase.Deploy) cursorPos = null;
+      if (state.phase !== BattlePhase.Deploy) ui.cursorPos = null;
       updateUI();
     }
     return;
@@ -231,14 +243,14 @@ function handleCellClick(cell: Position): void {
   if (state.phase !== BattlePhase.PlayerTurn) return;
 
   // ── ターゲット選択 ──
-  if (!pendingAction) return;
+  if (!ui.pending) return;
 
   // 移動先選択
-  if (pendingAction.kind === 'move') {
+  if (ui.pending.kind === 'move') {
     const movable = state.getMovableForCurrent();
     if (movable.some(p => posEqual(p, cell))) {
-      pendingAction = null;
-      cursorPos = null;
+      ui.pending = null;
+      ui.cursorPos = null;
       state.executeAction(moveAction(state.currentUnitIndex, cell));
       updateUI();
     }
@@ -248,25 +260,25 @@ function handleCellClick(cell: Position): void {
   if (!unit) return;
 
   // pick3 モード
-  if (pickMax > 0 && pendingAction.kind === 'attack') {
-    const part = getPartFromSlot(unit, pendingAction.partSlot);
+  if (ui.pickMax > 0 && ui.pending.kind === 'attack') {
+    const part = getPartBySlot(unit, ui.pending.partSlot);
     const validTargets = state.getTargetsForPart(part);
     if (!validTargets.some(p => posEqual(p, cell))) return;
 
-    const existIdx = pickTargets.findIndex(p => posEqual(p, cell));
+    const existIdx = ui.pickTargets.findIndex(p => posEqual(p, cell));
     if (existIdx >= 0) {
-      pickTargets.splice(existIdx, 1);
+      ui.pickTargets.splice(existIdx, 1);
       updateUI();
       return;
     }
 
-    pickTargets.push(cell);
+    ui.pickTargets.push(cell);
     updateUI();
 
-    if (pickTargets.length >= pickMax) {
-      const targets = [...pickTargets];
-      const slot = pickPartSlot!;
-      cursorPos = null;
+    if (ui.pickTargets.length >= ui.pickMax) {
+      const targets = [...ui.pickTargets];
+      const slot = ui.pickPartSlot!;
+      ui.cursorPos = null;
       enterPreview({
         kind: ActionKind.Attack,
         unitIndex: state.currentUnitIndex,
@@ -278,9 +290,9 @@ function handleCellClick(cell: Position): void {
   }
 
   // 通常の単体ターゲット選択 → プレビューへ
-  const action = buildCellAction(pendingAction, cell, unit);
+  const action = buildCellAction(ui.pending, cell, unit);
   if (action) {
-    cursorPos = null;
+    ui.cursorPos = null;
     enterPreview(action);
   }
 }
@@ -288,13 +300,13 @@ function handleCellClick(cell: Position): void {
 function buildCellAction(
   sel: ActionSelection,
   cell: Position,
-  unit: import('./models/types').MedabotState,
-): import('./models/types').BattleAction | null {
+  unit: MedabotState,
+): BattleAction | null {
   const idx = state.currentUnitIndex;
   switch (sel.kind) {
     case 'attack':
     case 'setDevice': {
-      const part = getPartFromSlot(unit, sel.partSlot);
+      const part = getPartBySlot(unit, sel.partSlot);
       const targets = state.getTargetsForPart(part);
       if (!targets.some(p => posEqual(p, cell))) return null;
       const kind = sel.kind === 'attack' ? ActionKind.Attack : ActionKind.SetDevice;
@@ -306,146 +318,94 @@ function buildCellAction(
 }
 
 function onActionSelected(action: ActionSelection): void {
-  pendingAction = action;
+  ui.pending = action;
 
   switch (action.kind) {
-    case 'attack': {
-      const unit = state.getCurrentUnit();
-      if (!unit) break;
-      const part = getPartFromSlot(unit, action.partSlot);
-      const weapon = part.weaponType ? getWeapon(part.weaponType) : undefined;
-
-      // 自動照準: プレビューへ
-      if (weapon?.blastShape === 'same_col' || weapon?.blastShape === 'mirror_col' || weapon?.blastShape === 'front4' || weapon?.blastShape === 'front2' || weapon?.blastShape === 'vertical_line') {
-        enterPreview({
-          kind: ActionKind.Attack,
-          unitIndex: state.currentUnitIndex,
-          partSlot: action.partSlot,
-        });
-        break;
-      }
-
-      // pick3
-      if (weapon?.blastShape === 'pick3') {
-        pickTargets = [];
-        pickMax = 3;
-        pickPartSlot = action.partSlot;
-        initCursor();
-        updateUI();
-        break;
-      }
-
-      // 通常ターゲット選択
-      initCursor();
-      updateUI();
-      break;
-    }
-
-    case 'setDevice':
-      initCursor();
-      updateUI();
-      break;
-
-    case 'assist': {
-      const unit = state.getCurrentUnit();
-      if (!unit) break;
-      const part = getPartFromSlot(unit, action.partSlot);
-      if (part.assistType === 'scan') {
-        // 索敵はプレビューへ
-        enterPreview({ kind: ActionKind.Assist, unitIndex: state.currentUnitIndex, partSlot: action.partSlot });
-      } else {
-        pendingAction = null;
-        submit({ kind: ActionKind.Assist, unitIndex: state.currentUnitIndex, partSlot: action.partSlot });
-      }
-      break;
-    }
-
-    case 'guard':
-      pendingAction = null;
-      submit({ kind: ActionKind.Guard, unitIndex: state.currentUnitIndex });
-      break;
-
-    case 'heal': {
-      let lowestIdx = -1;
-      let lowestHp = Infinity;
-      state.playerTeam.forEach((u, i) => {
-        if (isAlive(u) && u.currentHp < u.def.hp && u.currentHp < lowestHp) {
-          lowestHp = u.currentHp; lowestIdx = i;
-        }
-      });
-      pendingAction = null;
-      if (lowestIdx >= 0) submit(healAction(state.currentUnitIndex, lowestIdx));
-      else submit(skipAction(state.currentUnitIndex));
-      break;
-    }
-
-    case 'move':
-      initCursor();
-      updateUI();
-      break;
-
-    case 'cancelMove':
-      pendingAction = null;
-      cursorPos = null;
-      resetPick();
-      state.undoMove();
-      updateUI();
-      break;
-
-    case 'confirmPreview':
-      if (previewAction) {
-        const a = previewAction;
-        previewAction = null;
-        previewCells = [];
-        pendingAction = null;
-        cursorPos = null;
-        resetPick();
-        submit(a);
-      }
-      break;
-
-    case 'cancelPreview':
-      previewAction = null;
-      previewCells = [];
-      pendingAction = null;
-      cursorPos = null;
-      resetPick();
-      updateUI();
-      break;
-
-    case 'cancel':
-      pendingAction = null;
-      cursorPos = null;
-      resetPick();
-      updateUI();
-      break;
-
-    case 'skip':
-      pendingAction = null;
-      resetPick();
-      submit(skipAction(state.currentUnitIndex));
-      break;
+    case 'attack':    handleAttackAction(action); break;
+    case 'setDevice': initCursor(); updateUI(); break;
+    case 'assist':    handleAssistAction(action); break;
+    case 'guard':     ui.pending = null; submit({ kind: ActionKind.Guard, unitIndex: state.currentUnitIndex }); break;
+    case 'heal':      handleHealAction(action); break;
+    case 'move':      initCursor(); updateUI(); break;
+    case 'skip':      ui.pending = null; resetPick(); submit(skipAction(state.currentUnitIndex)); break;
+    case 'cancelMove':     ui.pending = null; ui.cursorPos = null; resetPick(); state.undoMove(); updateUI(); break;
+    case 'confirmPreview': handleConfirmPreview(); break;
+    case 'cancelPreview':  clearInputState(); updateUI(); break;
+    case 'cancel':         clearInputState(); updateUI(); break;
   }
 }
 
-function resetPick(): void {
-  pickTargets = [];
-  pickMax = 0;
-  pickPartSlot = null;
+function handleAttackAction(action: ActionSelection & { kind: 'attack' }): void {
+  const unit = state.getCurrentUnit();
+  if (!unit) return;
+  const part = getPartBySlot(unit, action.partSlot);
+  const weapon = part.weaponType ? getWeapon(part.weaponType) : undefined;
+
+  // 自動照準: プレビューへ
+  const autoShapes = ['same_col', 'mirror_col', 'front4', 'front2', 'vertical_line'];
+  if (weapon?.blastShape && autoShapes.includes(weapon.blastShape)) {
+    enterPreview({ kind: ActionKind.Attack, unitIndex: state.currentUnitIndex, partSlot: action.partSlot });
+    return;
+  }
+
+  // pick3
+  if (weapon?.blastShape === 'pick3') {
+    ui.pickTargets = [];
+    ui.pickMax = 3;
+    ui.pickPartSlot = action.partSlot;
+    initCursor();
+    updateUI();
+    return;
+  }
+
+  // 通常ターゲット選択
+  initCursor();
+  updateUI();
+}
+
+function handleAssistAction(action: ActionSelection & { kind: 'assist' }): void {
+  const unit = state.getCurrentUnit();
+  if (!unit) return;
+  const part = getPartBySlot(unit, action.partSlot);
+  if (part.assistType === 'scan') {
+    enterPreview({ kind: ActionKind.Assist, unitIndex: state.currentUnitIndex, partSlot: action.partSlot });
+  } else {
+    ui.pending = null;
+    submit({ kind: ActionKind.Assist, unitIndex: state.currentUnitIndex, partSlot: action.partSlot });
+  }
+}
+
+function handleHealAction(action: ActionSelection & { kind: 'heal' }): void {
+  let lowestIdx = -1;
+  let lowestHp = Infinity;
+  state.playerTeam.forEach((u, i) => {
+    if (isAlive(u) && u.currentHp < u.def.hp && u.currentHp < lowestHp) {
+      lowestHp = u.currentHp; lowestIdx = i;
+    }
+  });
+  ui.pending = null;
+  if (lowestIdx >= 0) submit(healAction(state.currentUnitIndex, lowestIdx, action.partSlot));
+  else submit(skipAction(state.currentUnitIndex));
+}
+
+function handleConfirmPreview(): void {
+  if (!ui.preview) return;
+  const a = ui.preview;
+  clearInputState();
+  submit(a);
 }
 
 function initCursor(): void {
   const unit = state.getCurrentUnit();
-  if (!unit) { cursorPos = null; return; }
+  if (!unit) { ui.cursorPos = null; return; }
 
-  if (pendingAction?.kind === 'move') {
-    cursorPos = { ...unit.position };
-  } else if (pendingAction && 'partSlot' in pendingAction &&
-    (pendingAction.kind === 'attack' || pendingAction.kind === 'setDevice')) {
-    const part = getPartFromSlot(unit, pendingAction.partSlot);
+  if (ui.pending?.kind === 'move') {
+    ui.cursorPos = { ...unit.position };
+  } else if (ui.pending && 'partSlot' in ui.pending &&
+    (ui.pending.kind === 'attack' || ui.pending.kind === 'setDevice')) {
+    const part = getPartBySlot(unit, ui.pending.partSlot);
     const targets = state.getTargetsForPart(part);
     if (targets.length > 0) {
-      // ユニットに最も近いターゲットセルを初期位置に
       let nearest = targets[0];
       let minDist = Infinity;
       for (const t of targets) {
@@ -454,76 +414,73 @@ function initCursor(): void {
         const dist = dx * dx + dy * dy;
         if (dist < minDist) { minDist = dist; nearest = t; }
       }
-      cursorPos = { ...nearest };
+      ui.cursorPos = { ...nearest };
     } else {
-      cursorPos = { ...unit.position };
+      ui.cursorPos = { ...unit.position };
     }
   } else {
-    cursorPos = null;
+    ui.cursorPos = null;
   }
 }
 
 function moveCursor(dx: number, dy: number): void {
-  if (!cursorPos) return;
-  const nx = cursorPos.x + dx;
-  const ny = cursorPos.y + dy;
+  if (!ui.cursorPos) return;
+  const nx = ui.cursorPos.x + dx;
+  const ny = ui.cursorPos.y + dy;
   if (nx >= 0 && nx < CONFIG.GRID_COLS && ny >= 0 && ny < CONFIG.GRID_ROWS) {
-    cursorPos = { x: nx, y: ny };
-    renderer.cursorCell = cursorPos;
+    ui.cursorPos = { x: nx, y: ny };
+    renderer.cursorCell = ui.cursorPos;
   }
 }
 
-function enterPreview(action: import('./models/types').BattleAction): void {
-  previewAction = action;
+function enterPreview(action: BattleAction): void {
+  ui.preview = action;
 
   const unit = state.getCurrentUnit();
   if (!unit || !action.partSlot) {
-    previewCells = action.target ? [action.target] : [];
-    previewType = 'attack';
+    ui.previewCells = action.target ? [action.target] : [];
+    ui.previewType = 'attack';
     updateUI();
     return;
   }
 
-  const part = getPartFromSlot(unit, action.partSlot);
+  const part = getPartBySlot(unit, action.partSlot);
 
   // 索敵プレビュー
   if (action.kind === ActionKind.Assist && part.assistType === 'scan') {
-    previewCells = getScanPositions(unit.position, Team.Player);
-    previewType = 'scan';
+    ui.previewCells = getScanPositions(unit.position, Team.Player);
+    ui.previewType = 'scan';
     updateUI();
     return;
   }
 
   // 攻撃プレビュー
-  previewType = 'attack';
+  ui.previewType = 'attack';
   const weapon = part.weaponType ? getWeapon(part.weaponType) : undefined;
 
   if (action.targets) {
-    // pick3: 選択した各ターゲット
-    previewCells = action.targets;
+    ui.previewCells = action.targets;
   } else if (weapon?.blastShape && weapon.blastShape !== 'pick3') {
-    // 自動照準: blastShapeから計算
-    previewCells = getAutoTargetPreview(weapon, unit.position, Team.Player);
+    ui.previewCells = getAutoTargetPreview(weapon, unit.position, Team.Player);
   } else if (action.target && weapon) {
-    // 通常攻撃: blastAreaから計算
-    previewCells = getBlastPositions(action.target, weapon.blastArea);
+    ui.previewCells = getBlastPositions(action.target, weapon.blastArea);
   } else if (action.target) {
-    previewCells = [action.target];
+    ui.previewCells = [action.target];
   } else {
-    previewCells = [];
+    ui.previewCells = [];
   }
 
   updateUI();
 }
 
 function onKeyDown(e: KeyboardEvent): void {
-  if (aiRunning) return;
+  if (ui.aiRunning) return;
 
   const key = e.key;
 
   // ── 配置フェーズ ──
   if (state.phase === BattlePhase.Deploy) {
-    if (!cursorPos) return;
+    if (!ui.cursorPos) return;
     switch (key) {
       case 'ArrowUp': case 'w': case 'W':
         e.preventDefault(); moveCursor(0, -1); return;
@@ -534,7 +491,7 @@ function onKeyDown(e: KeyboardEvent): void {
       case 'ArrowRight': case 'd': case 'D':
         e.preventDefault(); moveCursor(1, 0); return;
       case ' ': case 'Enter':
-        e.preventDefault(); handleCellClick(cursorPos); return;
+        e.preventDefault(); handleCellClick(ui.cursorPos); return;
     }
     return;
   }
@@ -542,7 +499,7 @@ function onKeyDown(e: KeyboardEvent): void {
   if (state.phase !== BattlePhase.PlayerTurn) return;
 
   // プレビュー中
-  if (previewAction) {
+  if (ui.preview) {
     if (key === ' ' || key === 'Enter') {
       e.preventDefault();
       onActionSelected({ kind: 'confirmPreview' });
@@ -553,12 +510,12 @@ function onKeyDown(e: KeyboardEvent): void {
   }
 
   // ターゲット選択中（攻撃 or 移動）
-  if (pendingAction) {
+  if (ui.pending) {
     if (key === 'Escape') {
       onActionSelected({ kind: 'cancel' });
       return;
     }
-    if (cursorPos) {
+    if (ui.cursorPos) {
       switch (key) {
         case 'ArrowUp': case 'w': case 'W':
           e.preventDefault(); moveCursor(0, -1); return;
@@ -569,7 +526,7 @@ function onKeyDown(e: KeyboardEvent): void {
         case 'ArrowRight': case 'd': case 'D':
           e.preventDefault(); moveCursor(1, 0); return;
         case ' ': case 'Enter':
-          e.preventDefault(); handleCellClick(cursorPos); return;
+          e.preventDefault(); handleCellClick(ui.cursorPos); return;
       }
     }
     return;
@@ -628,13 +585,13 @@ function onUnitCardClick(_index: number): void {}
 // ── 共通実行パス ──
 
 function flushPendingMessages(): void {
-  for (const text of pendingAttackMessages) {
+  for (const text of ui.pendingMessages) {
     messageLog.addMessage(text);
   }
-  pendingAttackMessages = [];
+  ui.pendingMessages = [];
 }
 
-async function submit(action: import('./models/types').BattleAction): Promise<void> {
+async function submit(action: BattleAction): Promise<void> {
   state.executeAction(action);
   await renderer.waitForAnimation();
   flushPendingMessages();
@@ -649,9 +606,9 @@ function afterAction(): void {
 
   if (state.phase === BattlePhase.EnemyTurn) {
     updateUI();
-    aiRunning = true;
+    ui.aiRunning = true;
     executeAiTurnAnimated(state, () => updateUI(), 300, async () => { await renderer.waitForAnimation(); flushPendingMessages(); }).then(() => {
-      aiRunning = false;
+      ui.aiRunning = false;
       if (state.phase === BattlePhase.Victory || state.phase === BattlePhase.Defeat) {
         showResult();
         return;
