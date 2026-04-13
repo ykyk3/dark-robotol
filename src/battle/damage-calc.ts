@@ -1,20 +1,14 @@
 import { CONFIG } from '../config';
 import { MedabotState, PartDef, HitResult, WeaponDef } from '../models/types';
-import { totalDefense, getEvasion } from '../models/medabot';
-import { randFloat, rollHit } from '../utils/random';
+import { totalDefense } from '../models/medabot';
+import { randFloat } from '../utils/random';
 
 export function calcDamage(
   attackPart: PartDef,
   target: MedabotState,
-  disruptPenalty = 0,
+  _disruptPenalty = 0,
   weapon?: WeaponDef,
-): HitResult | null {
-  const accuracy = (attackPart.accuracy ?? 80) - disruptPenalty;
-  const evasion = getEvasion(target);
-  const hitChance = accuracy - evasion;
-
-  if (!rollHit(hitChance)) return null;
-
+): HitResult {
   let power = attackPart.attackPower ?? 0;
   const defense = totalDefense(target);
   const reduction = defense / (defense + CONFIG.DEFENSE_FACTOR);

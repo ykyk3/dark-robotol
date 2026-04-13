@@ -390,29 +390,25 @@ export class BattleState {
             return;
           }
           const result = calcDamage(part, enemy, 0, weapon);
-          if (result) {
-            result.targetIndex = idx;
-            hits.push(result);
-            // ヒットした敵を可視化（索敵と同様）
-            const vis = team === Team.Player ? this.visibility : this.enemyVisibility;
-            vis.reveal(idx, CONFIG.SCAN_VISIBLE_DURATION);
-            eventBus.emit({
-              type: 'message',
-              text: `${attacker.def.name}の${part.name}！${enemy.def.name}に${result.damage}ダメージ！`,
-            });
-            if (result.destroyed) {
-              eventBus.emit({ type: 'destroy', unitIndex: idx, team: enemy.team });
-              eventBus.emit({ type: 'message', text: `${enemy.def.name}は機能停止した！` });
-            }
+          result.targetIndex = idx;
+          hits.push(result);
+          // ヒットした敵を可視化（索敵と同様）
+          const vis = team === Team.Player ? this.visibility : this.enemyVisibility;
+          vis.reveal(idx, CONFIG.SCAN_VISIBLE_DURATION);
+          eventBus.emit({
+            type: 'message',
+            text: `${attacker.def.name}の${part.name}！${enemy.def.name}に${result.damage}ダメージ！`,
+          });
+          if (result.destroyed) {
+            eventBus.emit({ type: 'destroy', unitIndex: idx, team: enemy.team });
+            eventBus.emit({ type: 'message', text: `${enemy.def.name}は機能停止した！` });
           }
         });
       }
     }
 
     eventBus.emit({ type: 'attack', unitIndex: attackerIndex, team, origin: { ...attacker.position }, target, targets: hitPositions, weaponId: weapon.id, hits });
-    if (hits.length === 0) {
-      eventBus.emit({ type: 'message', text: `${attacker.def.name}の攻撃はミスした…` });
-    } else if (team === Team.Player) {
+    if (team === Team.Player) {
       eventBus.emit({ type: 'message', text: `${hits.length}ヒット！` });
     }
     this.checkVictory();
@@ -446,28 +442,24 @@ export class BattleState {
           return;
         }
         const result = calcDamage(part, enemy, 0, weapon);
-        if (result) {
-          result.targetIndex = idx;
-          hits.push(result);
-          // ヒットした敵を可視化（索敵と同様）
-          const vis = team === Team.Player ? this.visibility : this.enemyVisibility;
-          vis.reveal(idx, CONFIG.SCAN_VISIBLE_DURATION);
-          eventBus.emit({
-            type: 'message',
-            text: `${attacker.def.name}の${part.name}！${enemy.def.name}に${result.damage}ダメージ！`,
-          });
-          if (result.destroyed) {
-            eventBus.emit({ type: 'destroy', unitIndex: idx, team: enemy.team });
-            eventBus.emit({ type: 'message', text: `${enemy.def.name}は機能停止した！` });
-          }
+        result.targetIndex = idx;
+        hits.push(result);
+        // ヒットした敵を可視化（索敵と同様）
+        const vis = team === Team.Player ? this.visibility : this.enemyVisibility;
+        vis.reveal(idx, CONFIG.SCAN_VISIBLE_DURATION);
+        eventBus.emit({
+          type: 'message',
+          text: `${attacker.def.name}の${part.name}！${enemy.def.name}に${result.damage}ダメージ！`,
+        });
+        if (result.destroyed) {
+          eventBus.emit({ type: 'destroy', unitIndex: idx, team: enemy.team });
+          eventBus.emit({ type: 'message', text: `${enemy.def.name}は機能停止した！` });
         }
       });
     }
 
     eventBus.emit({ type: 'attack', unitIndex: attackerIndex, team, origin: { ...attacker.position }, target: targets[0] ?? attacker.position, targets: [...targets], weaponId: weapon.id, hits });
-    if (hits.length === 0) {
-      eventBus.emit({ type: 'message', text: `${attacker.def.name}の攻撃はミスした…` });
-    } else if (team === Team.Player) {
+    if (team === Team.Player) {
       eventBus.emit({ type: 'message', text: `${hits.length}ヒット！` });
     }
     this.checkVictory();
