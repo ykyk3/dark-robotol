@@ -19,7 +19,7 @@ export class CanvasRenderer {
   selectedCell: Position | null = null;
   cursorCell: Position | null = null;
 
-  private flashEffect: { pos: Position[]; color: string; frames: number } | null = null;
+  private flashEffects: { pos: Position[]; color: string; frames: number }[] = [];
   private moveAnim: { from: Position; to: Position; progress: number; color: string } | null = null;
   private weaponAnim: WeaponAnimation | null = null;
 
@@ -194,16 +194,18 @@ export class CanvasRenderer {
   }
 
   private drawFlashEffect(): void {
-    if (!this.flashEffect) return;
+    if (this.flashEffects.length === 0) return;
     const ctx = this.ctx; const cs = this.cellSize;
-    ctx.fillStyle = this.flashEffect.color;
-    for (const p of this.flashEffect.pos) ctx.fillRect(p.x * cs, p.y * cs, cs, cs);
-    this.flashEffect.frames--;
-    if (this.flashEffect.frames <= 0) this.flashEffect = null;
+    for (const effect of this.flashEffects) {
+      ctx.fillStyle = effect.color;
+      for (const p of effect.pos) ctx.fillRect(p.x * cs, p.y * cs, cs, cs);
+      effect.frames--;
+    }
+    this.flashEffects = this.flashEffects.filter(e => e.frames > 0);
   }
 
   flash(positions: Position[], color: string, frames = 15): void {
-    this.flashEffect = { pos: positions, color, frames };
+    this.flashEffects.push({ pos: positions, color, frames });
   }
 
   private drawMoveAnim(): void {
@@ -254,7 +256,7 @@ export class CanvasRenderer {
         speed: speeds.projectile,
         impactSpeed: speeds.impact,
         hasHits: params.hasHits,
-        flashFired: false,
+        flashFiredCount: 0,
         onComplete: () => {
           // miss 時のみ完了時にグレーフラッシュ
           if (!params.hasHits) {
@@ -282,12 +284,19 @@ export class CanvasRenderer {
     const anim = this.weaponAnim;
     drawWeaponAnimation(this.ctx, anim, this.cellSize);
 
-    // タイミングベースの汎用フラッシュ発火
-    if (!anim.flashFired && anim.hasHits) {
+    // ターゲットごとの時間差フラッシュ発火
+    if (anim.flashFiredCount < anim.targets.length && anim.hasHits) {
       const flashCfg = getWeaponFlashAt(anim.weaponId);
-      if (anim.phase === flashCfg.phase && anim.progress >= flashCfg.progress) {
-        anim.flashFired = true;
-        this.flash(anim.targets, 'rgba(220, 20, 60, 0.5)', 15);
+      if (anim.phase === flashCfg.phase) {
+        for (let i = anim.flashFiredCount; i < anim.targets.length; i++) {
+          const threshold = flashCfg.progress + i * flashCfg.stagger;
+          if (anim.progress >= threshold) {
+            this.flash([anim.targets[i]], 'rgba(220, 20, 60, 0.5)', 15);
+            anim.flashFiredCount = i + 1;
+          } else {
+            break;
+          }
+        }
       }
     }
 

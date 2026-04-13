@@ -11,8 +11,8 @@ export interface WeaponAnimation {
   impactSpeed: number;
   hasHits: boolean;
   onComplete?: () => void;
-  /** 汎用フラッシュが発火済みか */
-  flashFired?: boolean;
+  /** 汎用フラッシュの発火済みターゲット数 */
+  flashFiredCount: number;
   /** 武器固有の一時データ（稲妻の折れ線座標など） */
   extra?: unknown;
 }
@@ -517,21 +517,23 @@ interface WeaponSpeedConfig {
   projectile: number;
   impact: number;
   flashAt: { phase: 'projectile' | 'impact'; progress: number };
+  /** 複数ターゲット間のフラッシュ遅延（progress単位） */
+  flashStagger: number;
 }
 
 const WEAPON_SPEED: Record<string, WeaponSpeedConfig> = {
-  rifle:        { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.3 } },
-  gatling:      { projectile: 0.06, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.25 } },
-  missile:      { projectile: 0.04, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 } },
-  laser:        { projectile: 0.08, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.5 } },
-  beam:         { projectile: 0.06, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.5 } },
-  break:        { projectile: 0.06, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 } },
-  thunder:      { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.35 } },
-  sword:        { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.4 } },
-  hammer:       { projectile: 0.06, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 } },
-  trap_shoot:   { projectile: 0.05, impact: 0.08, flashAt: { phase: 'projectile', progress: 0.85 } },
-  trap_status:  { projectile: 0.05, impact: 0.08, flashAt: { phase: 'projectile', progress: 0.85 } },
-  repair_plant: { projectile: 0.05, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 } },
+  rifle:        { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.3 },  flashStagger: 0.2 },
+  gatling:      { projectile: 0.06, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.25 }, flashStagger: 0.15 },
+  missile:      { projectile: 0.04, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 },  flashStagger: 0.15 },
+  laser:        { projectile: 0.08, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.5 },  flashStagger: 0.1 },
+  beam:         { projectile: 0.06, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.5 },  flashStagger: 0.1 },
+  break:        { projectile: 0.06, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 },  flashStagger: 0.15 },
+  thunder:      { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.35 }, flashStagger: 0.15 },
+  sword:        { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.4 },  flashStagger: 0.15 },
+  hammer:       { projectile: 0.06, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 },  flashStagger: 0.15 },
+  trap_shoot:   { projectile: 0.05, impact: 0.08, flashAt: { phase: 'projectile', progress: 0.85 }, flashStagger: 0.0 },
+  trap_status:  { projectile: 0.05, impact: 0.08, flashAt: { phase: 'projectile', progress: 0.85 }, flashStagger: 0.0 },
+  repair_plant: { projectile: 0.05, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 },  flashStagger: 0.0 },
 };
 
 /** 武器アニメーションの描画を実行 */
@@ -555,6 +557,8 @@ export function hasImpactPhase(weaponId: string): boolean {
 }
 
 /** 武器IDからフラッシュ発火タイミングを取得 */
-export function getWeaponFlashAt(weaponId: string): { phase: 'projectile' | 'impact'; progress: number } {
-  return WEAPON_SPEED[weaponId]?.flashAt ?? { phase: 'projectile', progress: 0.5 };
+export function getWeaponFlashAt(weaponId: string): { phase: 'projectile' | 'impact'; progress: number; stagger: number } {
+  const cfg = WEAPON_SPEED[weaponId];
+  if (!cfg) return { phase: 'projectile', progress: 0.5, stagger: 0.15 };
+  return { ...cfg.flashAt, stagger: cfg.flashStagger };
 }
