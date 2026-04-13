@@ -11,6 +11,8 @@ export interface WeaponAnimation {
   impactSpeed: number;
   hasHits: boolean;
   onComplete?: () => void;
+  /** 汎用フラッシュが発火済みか */
+  flashFired?: boolean;
   /** 武器固有の一時データ（稲妻の折れ線座標など） */
   extra?: unknown;
 }
@@ -230,16 +232,6 @@ const drawLaser: WeaponDrawFn = (ctx, anim, cs) => {
   ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(edgeX, oy); ctx.lineTo(ex, ey); ctx.stroke();
   ctx.shadowBlur = 0;
-
-  // ビーム通過済みのターゲットマスにヒット閃光
-  for (const pos of anim.targets) {
-    const c = cellCenter(pos, cs);
-    const ratio = endPt.px !== edgeX ? (c.px - edgeX) / (endPt.px - edgeX) : 0;
-    if (t < ratio) continue;
-    const flash = Math.max(0, 1 - (t - ratio) * 3);
-    ctx.fillStyle = `rgba(200, 255, 255, ${flash * 0.5})`;
-    ctx.fillRect(c.px - cs / 2, c.py - cs / 2, cs, cs);
-  }
   ctx.restore();
 };
 
@@ -269,16 +261,6 @@ const drawBeam: WeaponDrawFn = (ctx, anim, cs) => {
   ctx.globalAlpha = 0.9;
   ctx.beginPath(); ctx.moveTo(edgeX, oy); ctx.lineTo(ex, ey); ctx.stroke();
   ctx.shadowBlur = 0;
-
-  // ビーム通過済みのターゲットマスにヒット閃光
-  for (const pos of anim.targets) {
-    const c = cellCenter(pos, cs);
-    const ratio = endPt.px !== edgeX ? (c.px - edgeX) / (endPt.px - edgeX) : 0;
-    if (t < ratio) continue;
-    const flash = Math.max(0, 1 - (t - ratio) * 3);
-    ctx.fillStyle = `rgba(255, 200, 255, ${flash * 0.5})`;
-    ctx.fillRect(c.px - cs / 2, c.py - cs / 2, cs, cs);
-  }
   ctx.restore();
 };
 
@@ -366,16 +348,6 @@ const drawThunder: WeaponDrawFn = (ctx, anim, cs) => {
       ctx.stroke();
     }
     ctx.shadowBlur = 0;
-
-    // ヒット時フラッシュ
-    if (t > 0.3 && t < 0.5) {
-      const flashAlpha = (1 - Math.abs(t - 0.4) / 0.1) * 0.3;
-      for (const pos of anim.targets) {
-        const c = cellCenter(pos, cs);
-        ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
-        ctx.fillRect(c.px - cs / 2, c.py - cs / 2, cs, cs);
-      }
-    }
   }
   ctx.restore();
 };
@@ -541,19 +513,25 @@ const WEAPON_DRAW_MAP: Record<string, WeaponDrawFn> = {
 
 // ── 武器アニメーション速度設定 ──
 
-const WEAPON_SPEED: Record<string, { projectile: number; impact: number }> = {
-  rifle:        { projectile: 0.05, impact: 0.10 },
-  gatling:      { projectile: 0.06, impact: 0.10 },
-  missile:      { projectile: 0.04, impact: 0.06 },
-  laser:        { projectile: 0.08, impact: 0.10 },
-  beam:         { projectile: 0.06, impact: 0.10 },
-  break:        { projectile: 0.06, impact: 0.06 },
-  thunder:      { projectile: 0.05, impact: 0.10 },
-  sword:        { projectile: 0.05, impact: 0.10 },
-  hammer:       { projectile: 0.06, impact: 0.06 },
-  trap_shoot:   { projectile: 0.05, impact: 0.08 },
-  trap_status:  { projectile: 0.05, impact: 0.08 },
-  repair_plant: { projectile: 0.05, impact: 0.06 },
+interface WeaponSpeedConfig {
+  projectile: number;
+  impact: number;
+  flashAt: { phase: 'projectile' | 'impact'; progress: number };
+}
+
+const WEAPON_SPEED: Record<string, WeaponSpeedConfig> = {
+  rifle:        { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.3 } },
+  gatling:      { projectile: 0.06, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.25 } },
+  missile:      { projectile: 0.04, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 } },
+  laser:        { projectile: 0.08, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.5 } },
+  beam:         { projectile: 0.06, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.5 } },
+  break:        { projectile: 0.06, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 } },
+  thunder:      { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.35 } },
+  sword:        { projectile: 0.05, impact: 0.10, flashAt: { phase: 'projectile', progress: 0.4 } },
+  hammer:       { projectile: 0.06, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 } },
+  trap_shoot:   { projectile: 0.05, impact: 0.08, flashAt: { phase: 'projectile', progress: 0.85 } },
+  trap_status:  { projectile: 0.05, impact: 0.08, flashAt: { phase: 'projectile', progress: 0.85 } },
+  repair_plant: { projectile: 0.05, impact: 0.06, flashAt: { phase: 'impact',     progress: 0.1 } },
 };
 
 /** 武器アニメーションの描画を実行 */
@@ -574,4 +552,9 @@ export function getWeaponSpeed(weaponId: string): { projectile: number; impact: 
 /** impact フェーズがある武器かどうか */
 export function hasImpactPhase(weaponId: string): boolean {
   return ['missile', 'break', 'hammer', 'repair_plant'].includes(weaponId);
+}
+
+/** 武器IDからフラッシュ発火タイミングを取得 */
+export function getWeaponFlashAt(weaponId: string): { phase: 'projectile' | 'impact'; progress: number } {
+  return WEAPON_SPEED[weaponId]?.flashAt ?? { phase: 'projectile', progress: 0.5 };
 }

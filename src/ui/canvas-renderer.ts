@@ -2,7 +2,7 @@ import { CONFIG } from '../config';
 import { BattleState } from '../battle/battle-state';
 import { Position, Team } from '../models/types';
 import { isAlive } from '../models/medabot';
-import { WeaponAnimation, drawWeaponAnimation, getWeaponSpeed, hasImpactPhase } from './weapon-animations';
+import { WeaponAnimation, drawWeaponAnimation, getWeaponSpeed, getWeaponFlashAt, hasImpactPhase } from './weapon-animations';
 
 const C = CONFIG.COLORS;
 
@@ -254,11 +254,10 @@ export class CanvasRenderer {
         speed: speeds.projectile,
         impactSpeed: speeds.impact,
         hasHits: params.hasHits,
+        flashFired: false,
         onComplete: () => {
-          // 着弾フラッシュ
-          if (params.hasHits) {
-            this.flash(params.targets, 'rgba(220, 20, 60, 0.5)', 15);
-          } else {
+          // miss 時のみ完了時にグレーフラッシュ
+          if (!params.hasHits) {
             this.flash(params.targets, 'rgba(100, 100, 100, 0.3)', 8);
           }
           resolve();
@@ -282,6 +281,15 @@ export class CanvasRenderer {
     if (!this.weaponAnim) return;
     const anim = this.weaponAnim;
     drawWeaponAnimation(this.ctx, anim, this.cellSize);
+
+    // タイミングベースの汎用フラッシュ発火
+    if (!anim.flashFired && anim.hasHits) {
+      const flashCfg = getWeaponFlashAt(anim.weaponId);
+      if (anim.phase === flashCfg.phase && anim.progress >= flashCfg.progress) {
+        anim.flashFired = true;
+        this.flash(anim.targets, 'rgba(220, 20, 60, 0.5)', 15);
+      }
+    }
 
     // 進行更新
     anim.progress += anim.speed;

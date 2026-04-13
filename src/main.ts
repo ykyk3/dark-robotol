@@ -48,6 +48,9 @@ let pickPartSlot: PartSlot | null = null;
 // キーボードカーソル
 let cursorPos: Position | null = null;
 
+// アニメーション完了後に表示するメッセージ
+let pendingAttackMessages: string[] = [];
+
 // ── init ──
 
 function initGame(): void {
@@ -72,6 +75,7 @@ function initGame(): void {
 function handleAnimEvent(event: import('./models/types').GameEvent): void {
   switch (event.type) {
     case 'attack':
+      pendingAttackMessages = event.messages;
       renderer.startWeaponAnim({
         weaponId: event.weaponId,
         origin: event.origin,
@@ -623,9 +627,17 @@ function onUnitCardClick(_index: number): void {}
 
 // ── 共通実行パス ──
 
+function flushPendingMessages(): void {
+  for (const text of pendingAttackMessages) {
+    messageLog.addMessage(text);
+  }
+  pendingAttackMessages = [];
+}
+
 async function submit(action: import('./models/types').BattleAction): Promise<void> {
   state.executeAction(action);
   await renderer.waitForAnimation();
+  flushPendingMessages();
   afterAction();
 }
 
@@ -638,7 +650,7 @@ function afterAction(): void {
   if (state.phase === BattlePhase.EnemyTurn) {
     updateUI();
     aiRunning = true;
-    executeAiTurnAnimated(state, () => updateUI(), 300, () => renderer.waitForAnimation()).then(() => {
+    executeAiTurnAnimated(state, () => updateUI(), 300, async () => { await renderer.waitForAnimation(); flushPendingMessages(); }).then(() => {
       aiRunning = false;
       if (state.phase === BattlePhase.Victory || state.phase === BattlePhase.Defeat) {
         showResult();

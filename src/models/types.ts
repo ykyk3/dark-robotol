@@ -174,7 +174,7 @@ export interface BattleAction {
 
 export type GameEvent =
   | { type: 'move'; unitIndex: number; team: Team; from: Position; to: Position }
-  | { type: 'attack'; unitIndex: number; team: Team; origin: Position; target: Position; targets?: Position[]; weaponId: string; hits: HitResult[] }
+  | { type: 'attack'; unitIndex: number; team: Team; origin: Position; target: Position; targets?: Position[]; weaponId: string; hits: HitResult[]; messages: string[] }
   | { type: 'scan'; unitIndex: number; team: Team; center: Position; found: Position[] }
   | { type: 'assist'; unitIndex: number; team: Team; assistType: AssistType }
   | { type: 'setDevice'; unitIndex: number; team: Team; origin: Position; target: Position; weaponId: string }
