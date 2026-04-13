@@ -99,14 +99,14 @@ function handleAnimEvent(event: GameEvent): void {
         hasHits: true,
       });
       break;
-    case 'scan':
-      if (event.team === Team.Enemy) {
-        renderer.startScanEffect(event.center, Team.Enemy);
-        renderer.flash(event.found, 'rgba(255, 100, 100, 0.4)', 30);
-      } else {
-        renderer.flash(event.found, 'rgba(57, 255, 20, 0.4)', 20);
-      }
+    case 'scan': {
+      renderer.startScanEffect(event.center, event.team);
+      const flashColor = event.team === Team.Enemy
+        ? 'rgba(255, 100, 100, 0.4)'
+        : 'rgba(57, 255, 20, 0.4)';
+      renderer.flash(event.found, flashColor, 30);
       break;
+    }
     case 'move':
       if (event.team === Team.Player) {
         renderer.startMoveAnim(event.from, event.to, CONFIG.COLORS.PLAYER_UNIT);

@@ -229,33 +229,59 @@ export class CanvasRenderer {
       const pulse = 0.5 + 0.5 * Math.sin((effect.totalFrames - effect.frames) * 0.2);
       const alpha = t * (0.25 + pulse * 0.25);
 
-      // スキャナーから見た「対象陣地」＝相手側（プレイヤー側）を強く、スキャナー側は薄く
+      // 対象陣地（相手側）を色付け、アイコンはスキャナー陣の敵側境界（最前列）に
       const scannedXStart = effect.scannerTeam === Team.Enemy ? 0 : CONFIG.TERRITORY_X;
       const scannedXEnd = effect.scannerTeam === Team.Enemy ? CONFIG.TERRITORY_X : CONFIG.GRID_COLS;
-      const iconX = effect.scannerTeam === Team.Enemy ? CONFIG.GRID_COLS - 1 : 0;
+      const iconX = effect.scannerTeam === Team.Enemy ? CONFIG.TERRITORY_X : CONFIG.TERRITORY_X - 1;
+      const dir = effect.scannerTeam === Team.Enemy ? -1 : 1; // 波の向き
+      const rgb = effect.scannerTeam === Team.Enemy ? '255, 100, 100' : '57, 255, 20';
 
       ctx.save();
       for (const y of effect.rows) {
         // 対象行の被スキャン領域を着色
-        ctx.fillStyle = `rgba(255, 100, 100, ${alpha})`;
+        ctx.fillStyle = `rgba(${rgb}, ${alpha})`;
         ctx.fillRect(scannedXStart * cs, y * cs, (scannedXEnd - scannedXStart) * cs, cs);
 
-        // 行全体に薄いライン
-        ctx.strokeStyle = `rgba(255, 100, 100, ${alpha * 1.5})`;
+        // スキャン対象領域にのみ薄いライン
+        ctx.strokeStyle = `rgba(${rgb}, ${alpha * 1.5})`;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(0, y * cs + cs / 2);
-        ctx.lineTo(CONFIG.GRID_COLS * cs, y * cs + cs / 2);
+        ctx.moveTo(scannedXStart * cs, y * cs + cs / 2);
+        ctx.lineTo(scannedXEnd * cs, y * cs + cs / 2);
         ctx.stroke();
 
-        // 📡 アイコンを敵側に表示
+        // レーダー波アイコン: 実行側最前列に、敵側を向いた同心円弧×3
         const iconCx = iconX * cs + cs / 2;
         const iconCy = y * cs + cs / 2;
-        ctx.globalAlpha = 0.4 + pulse * 0.6 * t;
-        ctx.font = `${Math.floor(cs * 0.6)}px serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('📡', iconCx, iconCy);
+        const iconAlpha = 0.8 + pulse * 0.2 * t;
+
+        // 背景円で視認性を確保
+        ctx.globalAlpha = iconAlpha;
+        ctx.fillStyle = 'rgba(10, 10, 20, 0.9)';
+        ctx.beginPath();
+        ctx.arc(iconCx, iconCy, cs * 0.38, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 本体: 発信点の塗り丸
+        ctx.fillStyle = `rgb(${rgb})`;
+        ctx.beginPath();
+        ctx.arc(iconCx, iconCy, cs * 0.08, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 同心弧3本（敵方向に扇形、パルスで順に強調）
+        ctx.strokeStyle = `rgb(${rgb})`;
+        ctx.lineWidth = 2;
+        const startAngle = dir > 0 ? -Math.PI / 3 : Math.PI - Math.PI / 3;
+        const endAngle = dir > 0 ? Math.PI / 3 : Math.PI + Math.PI / 3;
+        for (let i = 0; i < 3; i++) {
+          const waveRadius = cs * (0.14 + i * 0.09);
+          // 波ごとに位相をずらしたパルス
+          const wavePulse = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin((effect.totalFrames - effect.frames) * 0.2 - i * 0.8));
+          ctx.globalAlpha = iconAlpha * wavePulse;
+          ctx.beginPath();
+          ctx.arc(iconCx, iconCy, waveRadius, startAngle, endAngle);
+          ctx.stroke();
+        }
         ctx.globalAlpha = 1;
       }
       ctx.restore();
