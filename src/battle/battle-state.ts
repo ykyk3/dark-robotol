@@ -290,10 +290,11 @@ export class BattleState {
         });
         const foundPositions = found.map(i => ({ ...enemies[i].position }));
         eventBus.emit({ type: 'scan', unitIndex, team, center: unit.position, found: foundPositions });
+        const foundNames = found.map(i => enemies[i].def.name).join('・');
         eventBus.emit({
           type: 'message',
           text: found.length > 0
-            ? `${unit.def.name}の${part.name}: ${found.length}体発見！`
+            ? `${unit.def.name}の${part.name}: ${foundNames}を発見！`
             : `${unit.def.name}の${part.name}: 反応なし`,
         });
         break;

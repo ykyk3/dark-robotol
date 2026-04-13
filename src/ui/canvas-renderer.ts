@@ -20,6 +20,7 @@ export class CanvasRenderer {
   cursorCell: Position | null = null;
 
   private flashEffects: { pos: Position[]; color: string; frames: number }[] = [];
+  private scanEffects: { rows: number[]; scannerTeam: Team; frames: number; totalFrames: number }[] = [];
   private moveAnim: { from: Position; to: Position; progress: number; color: string } | null = null;
   private weaponAnim: WeaponAnimation | null = null;
 
@@ -43,6 +44,7 @@ export class CanvasRenderer {
     this.drawGrid();
     this.drawTerritoryLine();
     this.drawHighlights();
+    this.drawScanEffect();
     this.drawTraps(state);
     this.drawUnits(state);
     this.drawMoveAnim();
@@ -206,6 +208,61 @@ export class CanvasRenderer {
 
   flash(positions: Position[], color: string, frames = 15): void {
     this.flashEffects.push({ pos: positions, color, frames });
+  }
+
+  startScanEffect(center: Position, scannerTeam: Team, frames = 90): void {
+    const rows: number[] = [];
+    for (let dy = -1; dy <= 1; dy++) {
+      const y = center.y + dy;
+      if (y >= 0 && y < CONFIG.GRID_ROWS) rows.push(y);
+    }
+    this.scanEffects.push({ rows, scannerTeam, frames, totalFrames: frames });
+  }
+
+  private drawScanEffect(): void {
+    if (this.scanEffects.length === 0) return;
+    const ctx = this.ctx;
+    const cs = this.cellSize;
+    for (const effect of this.scanEffects) {
+      const t = effect.frames / effect.totalFrames;
+      // パルス: 時間経過と位相で強弱
+      const pulse = 0.5 + 0.5 * Math.sin((effect.totalFrames - effect.frames) * 0.2);
+      const alpha = t * (0.25 + pulse * 0.25);
+
+      // スキャナーから見た「対象陣地」＝相手側（プレイヤー側）を強く、スキャナー側は薄く
+      const scannedXStart = effect.scannerTeam === Team.Enemy ? 0 : CONFIG.TERRITORY_X;
+      const scannedXEnd = effect.scannerTeam === Team.Enemy ? CONFIG.TERRITORY_X : CONFIG.GRID_COLS;
+      const iconX = effect.scannerTeam === Team.Enemy ? CONFIG.GRID_COLS - 1 : 0;
+
+      ctx.save();
+      for (const y of effect.rows) {
+        // 対象行の被スキャン領域を着色
+        ctx.fillStyle = `rgba(255, 100, 100, ${alpha})`;
+        ctx.fillRect(scannedXStart * cs, y * cs, (scannedXEnd - scannedXStart) * cs, cs);
+
+        // 行全体に薄いライン
+        ctx.strokeStyle = `rgba(255, 100, 100, ${alpha * 1.5})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, y * cs + cs / 2);
+        ctx.lineTo(CONFIG.GRID_COLS * cs, y * cs + cs / 2);
+        ctx.stroke();
+
+        // 📡 アイコンを敵側に表示
+        const iconCx = iconX * cs + cs / 2;
+        const iconCy = y * cs + cs / 2;
+        ctx.globalAlpha = 0.4 + pulse * 0.6 * t;
+        ctx.font = `${Math.floor(cs * 0.6)}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('📡', iconCx, iconCy);
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+
+      effect.frames--;
+    }
+    this.scanEffects = this.scanEffects.filter(e => e.frames > 0);
   }
 
   private drawMoveAnim(): void {

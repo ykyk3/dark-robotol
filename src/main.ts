@@ -100,7 +100,12 @@ function handleAnimEvent(event: GameEvent): void {
       });
       break;
     case 'scan':
-      renderer.flash(event.found, 'rgba(57, 255, 20, 0.4)', 20);
+      if (event.team === Team.Enemy) {
+        renderer.startScanEffect(event.center, Team.Enemy);
+        renderer.flash(event.found, 'rgba(255, 100, 100, 0.4)', 30);
+      } else {
+        renderer.flash(event.found, 'rgba(57, 255, 20, 0.4)', 20);
+      }
       break;
     case 'move':
       if (event.team === Team.Player) {
