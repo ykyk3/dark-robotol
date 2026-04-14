@@ -1,16 +1,28 @@
 import { CONFIG } from '../config';
 import { BattleState } from '../battle/battle-state';
-import { Position, Team } from '../models/types';
+import { AssistType, Position, Team } from '../models/types';
 import { isAlive } from '../models/medabot';
 import {
   WeaponAnimation,
+  SupportDrawFn,
   drawWeaponAnimation,
   getWeaponSpeed,
   getWeaponFlashAt,
   hasImpactPhase,
-} from './weapon-animations';
+  getAssistEffect,
+  healEffect,
+} from '../battle/actions';
 
 const C = CONFIG.COLORS;
+
+interface SupportAnim {
+  draw: SupportDrawFn;
+  origin: Position;
+  targets: Position[];
+  frames: number;
+  totalFrames: number;
+  onComplete?: () => void;
+}
 
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
@@ -34,6 +46,7 @@ export class CanvasRenderer {
   }[] = [];
   private moveAnim: { from: Position; to: Position; progress: number; color: string } | null = null;
   private weaponAnim: WeaponAnimation | null = null;
+  private supportAnims: SupportAnim[] = [];
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -60,6 +73,7 @@ export class CanvasRenderer {
     this.drawUnits(state);
     this.drawMoveAnim();
     this.drawWeaponAnim();
+    this.drawSupportAnims();
     this.drawFlashEffect();
     this.drawSelectedCell();
     this.drawCursor();
@@ -420,14 +434,69 @@ export class CanvasRenderer {
   }
 
   waitForAnimation(): Promise<void> {
-    if (!this.weaponAnim) return Promise.resolve();
-    return new Promise((resolve) => {
-      const orig = this.weaponAnim!.onComplete;
-      this.weaponAnim!.onComplete = () => {
-        orig?.();
-        resolve();
-      };
+    const promises: Promise<void>[] = [];
+    if (this.weaponAnim) {
+      promises.push(
+        new Promise((resolve) => {
+          const orig = this.weaponAnim!.onComplete;
+          this.weaponAnim!.onComplete = () => {
+            orig?.();
+            resolve();
+          };
+        }),
+      );
+    }
+    for (const sa of this.supportAnims) {
+      promises.push(
+        new Promise((resolve) => {
+          const orig = sa.onComplete;
+          sa.onComplete = () => {
+            orig?.();
+            resolve();
+          };
+        }),
+      );
+    }
+    if (promises.length === 0) return Promise.resolve();
+    return Promise.all(promises).then(() => undefined);
+  }
+
+  startHealAnim(origin: Position, targets: Position[]): void {
+    if (targets.length === 0) return;
+    this.supportAnims.push({
+      draw: healEffect.draw,
+      origin,
+      targets,
+      frames: healEffect.duration,
+      totalFrames: healEffect.duration,
     });
+  }
+
+  startAssistAnim(assistType: AssistType, origin: Position, targets: Position[]): void {
+    if (targets.length === 0) return;
+    const effect = getAssistEffect(assistType);
+    if (!effect) return;
+    this.supportAnims.push({
+      draw: effect.draw,
+      origin,
+      targets,
+      frames: effect.duration,
+      totalFrames: effect.duration,
+    });
+  }
+
+  private drawSupportAnims(): void {
+    if (this.supportAnims.length === 0) return;
+    const ctx = this.ctx;
+    const cs = this.cellSize;
+    for (const anim of this.supportAnims) {
+      const t = 1 - anim.frames / anim.totalFrames;
+      anim.draw(ctx, anim.targets, t, cs);
+      anim.frames--;
+    }
+    const finished = this.supportAnims.filter((a) => a.frames <= 0);
+    this.supportAnims = this.supportAnims.filter((a) => a.frames > 0);
+    for (const a of finished) a.onComplete?.();
   }
 
   private drawWeaponAnim(): void {
