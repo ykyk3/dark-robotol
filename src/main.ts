@@ -126,12 +126,6 @@ function handleAnimEvent(event: GameEvent): void {
         renderer.flash([team[event.unitIndex].position], 'rgba(255, 255, 255, 0.6)', 25);
       break;
     }
-    case 'heal':
-      renderer.startHealAnim(event.origin, [event.targetPosition]);
-      break;
-    case 'assist':
-      renderer.startAssistAnim(event.assistType, event.origin, event.targets);
-      break;
   }
 }
 
