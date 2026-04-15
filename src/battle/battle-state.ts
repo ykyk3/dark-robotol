@@ -276,7 +276,7 @@ export class BattleState {
 
       case ActionKind.Guard: {
         unit.isGuarding = true;
-        eventBus.emit({ type: 'guard', unitIndex: action.unitIndex, team });
+        eventBus.emit({ type: 'guard', unitIndex: action.unitIndex, team, position: { ...unit.position } });
         eventBus.emit({ type: 'message', text: `${unit.def.name}は防御態勢をとった` });
         this.advanceUnit(team);
         break;
@@ -297,6 +297,8 @@ export class BattleState {
             team,
             target: healTargetIdx,
             amount,
+            position: { ...unit.position },
+            targetPosition: { ...healTarget.position },
           });
           eventBus.emit({
             type: 'message',
@@ -359,7 +361,7 @@ export class BattleState {
         const turns = part.concealTurns ?? 2;
         unit.isConcealed = true;
         unit.concealTurnsLeft = turns;
-        eventBus.emit({ type: 'assist', unitIndex, team, assistType });
+        eventBus.emit({ type: 'assist', unitIndex, team, assistType, position: { ...unit.position } });
         eventBus.emit({
           type: 'message',
           text: `${unit.def.name}の${part.name}: ${turns}ターン隠蔽！`,
@@ -370,7 +372,7 @@ export class BattleState {
         const turns = part.disarmTurns ?? 1;
         unit.isDisarmed = true;
         unit.disarmTurnsLeft = turns;
-        eventBus.emit({ type: 'assist', unitIndex, team, assistType });
+        eventBus.emit({ type: 'assist', unitIndex, team, assistType, position: { ...unit.position } });
         eventBus.emit({
           type: 'message',
           text: `${unit.def.name}の${part.name}: 射撃ダメージを軽減！`,
@@ -388,7 +390,7 @@ export class BattleState {
         }
         if (nextAlly) {
           nextAlly.hasDoubleAction = true;
-          eventBus.emit({ type: 'assist', unitIndex, team, assistType });
+          eventBus.emit({ type: 'assist', unitIndex, team, assistType, position: { ...unit.position }, targetPosition: { ...nextAlly.position } });
           eventBus.emit({
             type: 'message',
             text: `${unit.def.name}の${part.name}: ${nextAlly.def.name}が2連続行動可能に！`,
@@ -406,7 +408,7 @@ export class BattleState {
             jammed++;
           }
         }
-        eventBus.emit({ type: 'assist', unitIndex, team, assistType });
+        eventBus.emit({ type: 'assist', unitIndex, team, assistType, position: { ...unit.position } });
         eventBus.emit({
           type: 'message',
           text:

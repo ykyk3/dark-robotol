@@ -38,7 +38,8 @@ const ui = {
   pending: null as ActionSelection | null,
   preview: null as BattleAction | null,
   previewCells: [] as Position[],
-  previewType: 'attack' as 'attack' | 'scan',
+  previewType: 'attack' as 'attack' | 'scan' | 'support',
+  previewLabel: undefined as string | undefined,
   aiRunning: false,
   cursorPos: null as Position | null,
   // pick3
@@ -62,6 +63,7 @@ function clearInputState(): void {
   ui.pending = null;
   ui.preview = null;
   ui.previewCells = [];
+  ui.previewLabel = undefined;
   ui.cursorPos = null;
   resetPick();
 }
@@ -120,6 +122,17 @@ function handleAnimEvent(event: GameEvent): void {
         renderer.startMoveAnim(event.from, event.to, CONFIG.COLORS.PLAYER_UNIT);
       }
       break;
+    case 'guard':
+      renderer.startEffectAnim('guard', event.position, event.team);
+      break;
+    case 'heal':
+      renderer.startEffectAnim('heal', event.position, event.team, event.targetPosition);
+      break;
+    case 'assist':
+      if (event.assistType !== 'scan') {
+        renderer.startEffectAnim(event.assistType, event.position, event.team, event.targetPosition);
+      }
+      break;
     case 'destroy': {
       const team = event.team === Team.Player ? state.playerTeam : state.enemyTeam;
       if (team[event.unitIndex])
@@ -173,7 +186,9 @@ function updateUI(): void {
           moveMode: isMoveTargeting,
         }
       : undefined;
-  const preview = ui.preview ? { cells: ui.previewCells.length, type: ui.previewType } : undefined;
+  const preview = ui.preview
+    ? { cells: ui.previewCells.length, type: ui.previewType, label: ui.previewLabel }
+    : undefined;
   actionMenu.render(state, targeting, preview, ui.pending);
   updateHighlights();
 
@@ -193,7 +208,7 @@ function updateHighlights(): void {
 
   // プレビュー中
   if (ui.preview && ui.previewCells.length > 0) {
-    if (ui.previewType === 'scan') {
+    if (ui.previewType === 'scan' || ui.previewType === 'support') {
       renderer.highlightScanRange = ui.previewCells;
     } else {
       renderer.highlightAttackRange = ui.previewCells;
@@ -347,8 +362,7 @@ function onActionSelected(action: ActionSelection): void {
       handleAssistAction(action);
       break;
     case 'guard':
-      ui.pending = null;
-      submit({ kind: ActionKind.Guard, unitIndex: state.currentUnitIndex });
+      enterPreview({ kind: ActionKind.Guard, unitIndex: state.currentUnitIndex });
       break;
     case 'heal':
       handleHealAction(action);
@@ -416,23 +430,11 @@ function handleAttackAction(action: ActionSelection & { kind: 'attack' }): void 
 }
 
 function handleAssistAction(action: ActionSelection & { kind: 'assist' }): void {
-  const unit = state.getCurrentUnit();
-  if (!unit) return;
-  const part = getPartBySlot(unit, action.partSlot);
-  if (part.assistType === 'scan') {
-    enterPreview({
-      kind: ActionKind.Assist,
-      unitIndex: state.currentUnitIndex,
-      partSlot: action.partSlot,
-    });
-  } else {
-    ui.pending = null;
-    submit({
-      kind: ActionKind.Assist,
-      unitIndex: state.currentUnitIndex,
-      partSlot: action.partSlot,
-    });
-  }
+  enterPreview({
+    kind: ActionKind.Assist,
+    unitIndex: state.currentUnitIndex,
+    partSlot: action.partSlot,
+  });
 }
 
 function handleHealAction(action: ActionSelection & { kind: 'heal' }): void {
@@ -444,9 +446,8 @@ function handleHealAction(action: ActionSelection & { kind: 'heal' }): void {
       lowestIdx = i;
     }
   });
-  ui.pending = null;
-  if (lowestIdx >= 0) submit(healAction(state.currentUnitIndex, lowestIdx, action.partSlot));
-  else submit(skipAction(state.currentUnitIndex));
+  // targetUnitIndex=-1 は「対象なし」を表す（preview にラベル表示、confirm で何もせずターン消費）
+  enterPreview(healAction(state.currentUnitIndex, lowestIdx, action.partSlot));
 }
 
 function handleConfirmPreview(): void {
@@ -505,9 +506,41 @@ function moveCursor(dx: number, dy: number): void {
 
 function enterPreview(action: BattleAction): void {
   ui.preview = action;
+  ui.previewLabel = undefined;
 
   const unit = state.getCurrentUnit();
-  if (!unit || !action.partSlot) {
+  if (!unit) {
+    ui.previewCells = [];
+    ui.previewType = 'attack';
+    updateUI();
+    return;
+  }
+
+  // 防御プレビュー
+  if (action.kind === ActionKind.Guard) {
+    ui.previewCells = [{ ...unit.position }];
+    ui.previewType = 'support';
+    ui.previewLabel = '防御態勢';
+    updateUI();
+    return;
+  }
+
+  // 回復プレビュー
+  if (action.kind === ActionKind.Heal) {
+    if (action.targetUnitIndex != null && action.targetUnitIndex >= 0) {
+      const target = state.playerTeam[action.targetUnitIndex];
+      ui.previewCells = target ? [{ ...target.position }] : [];
+      ui.previewLabel = `${target?.def.name ?? ''}を回復`;
+    } else {
+      ui.previewCells = [];
+      ui.previewLabel = '回復対象なし';
+    }
+    ui.previewType = 'support';
+    updateUI();
+    return;
+  }
+
+  if (!action.partSlot) {
     ui.previewCells = action.target ? [action.target] : [];
     ui.previewType = 'attack';
     updateUI();
@@ -516,12 +549,63 @@ function enterPreview(action: BattleAction): void {
 
   const part = getPartBySlot(unit, action.partSlot);
 
-  // 索敵プレビュー
-  if (action.kind === ActionKind.Assist && part.assistType === 'scan') {
-    ui.previewCells = getScanPositions(unit.position, Team.Player);
-    ui.previewType = 'scan';
-    updateUI();
-    return;
+  // 補助プレビュー（assistType 別）
+  if (action.kind === ActionKind.Assist) {
+    if (part.assistType === 'scan') {
+      ui.previewCells = getScanPositions(unit.position, Team.Player);
+      ui.previewType = 'scan';
+      updateUI();
+      return;
+    }
+    if (part.assistType === 'conceal') {
+      ui.previewCells = [{ ...unit.position }];
+      ui.previewType = 'support';
+      ui.previewLabel = '隠蔽';
+      updateUI();
+      return;
+    }
+    if (part.assistType === 'disarm') {
+      ui.previewCells = [{ ...unit.position }];
+      ui.previewType = 'support';
+      ui.previewLabel = '解除';
+      updateUI();
+      return;
+    }
+    if (part.assistType === 'doubleAction') {
+      // 次の行動可能な味方を検索
+      let nextAlly = null;
+      for (let i = state.currentUnitIndex + 1; i < state.playerTeam.length; i++) {
+        const a = state.playerTeam[i];
+        if (isAlive(a) && !a.hasActed) {
+          nextAlly = a;
+          break;
+        }
+      }
+      if (nextAlly) {
+        ui.previewCells = [{ ...nextAlly.position }];
+        ui.previewLabel = `${nextAlly.def.name}を応援`;
+      } else {
+        ui.previewCells = [];
+        ui.previewLabel = '応援対象なし';
+      }
+      ui.previewType = 'support';
+      updateUI();
+      return;
+    }
+    if (part.assistType === 'jamming') {
+      // 敵陣全域を表示
+      const cells: Position[] = [];
+      for (let x = CONFIG.TERRITORY_X; x < CONFIG.GRID_COLS; x++) {
+        for (let y = 0; y < CONFIG.GRID_ROWS; y++) {
+          cells.push({ x, y });
+        }
+      }
+      ui.previewCells = cells;
+      ui.previewType = 'attack';
+      ui.previewLabel = '妨害範囲';
+      updateUI();
+      return;
+    }
   }
 
   // 攻撃プレビュー

@@ -37,7 +37,7 @@ export class ActionMenu {
   render(
     state: BattleState,
     targeting?: { pickProgress?: { current: number; max: number }; moveMode?: boolean },
-    preview?: { cells: number; type: 'attack' | 'scan' },
+    preview?: { cells: number; type: 'attack' | 'scan' | 'support'; label?: string },
     activeAction?: ActionSelection | null,
   ): void {
     this.container.innerHTML = '';
@@ -127,10 +127,15 @@ export class ActionMenu {
     // ── 十字の下: 状態に応じた操作UI ──
     if (preview) {
       const span = document.createElement('span');
-      const label = preview.type === 'scan' ? '索敵範囲' : '攻撃範囲';
-      const color = preview.type === 'scan' ? 'var(--accent-green)' : 'var(--accent-red)';
+      const defaultLabel = preview.type === 'scan' ? '索敵範囲' : '攻撃範囲';
+      const label = preview.label ?? defaultLabel;
+      const color =
+        preview.type === 'scan' || preview.type === 'support'
+          ? 'var(--accent-green)'
+          : 'var(--accent-red)';
       span.style.cssText = `color: ${color}; padding: 4px;`;
-      span.textContent = `${label}プレビュー (${preview.cells}マス)`;
+      const cellText = preview.cells > 0 ? ` (${preview.cells}マス)` : '';
+      span.textContent = `${label}プレビュー${cellText}`;
       this.container.appendChild(span);
       this.addButton('実行', { kind: 'confirmPreview' });
       this.addButton('← キャンセル', { kind: 'cancelPreview' });

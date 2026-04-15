@@ -12,6 +12,17 @@ import {
 
 const C = CONFIG.COLORS;
 
+type EffectType = 'guard' | 'heal' | 'conceal' | 'disarm' | 'doubleAction' | 'jamming';
+
+interface EffectAnimation {
+  type: EffectType;
+  position: Position;
+  targetPosition?: Position;
+  team: Team;
+  frames: number;
+  totalFrames: number;
+}
+
 export class CanvasRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -34,6 +45,7 @@ export class CanvasRenderer {
   }[] = [];
   private moveAnim: { from: Position; to: Position; progress: number; color: string } | null = null;
   private weaponAnim: WeaponAnimation | null = null;
+  private effectAnims: EffectAnimation[] = [];
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -60,6 +72,7 @@ export class CanvasRenderer {
     this.drawUnits(state);
     this.drawMoveAnim();
     this.drawWeaponAnim();
+    this.drawEffectAnims();
     this.drawFlashEffect();
     this.drawSelectedCell();
     this.drawCursor();
@@ -464,6 +477,319 @@ export class CanvasRenderer {
         cb?.();
       }
     }
+  }
+
+  startEffectAnim(
+    type: EffectType,
+    position: Position,
+    team: Team,
+    targetPosition?: Position,
+  ): void {
+    const frameCounts: Record<EffectType, number> = {
+      guard: 60,
+      heal: 60,
+      conceal: 48,
+      disarm: 54,
+      doubleAction: 54,
+      jamming: 60,
+    };
+    this.effectAnims.push({
+      type,
+      position,
+      targetPosition,
+      team,
+      frames: frameCounts[type],
+      totalFrames: frameCounts[type],
+    });
+  }
+
+  private drawEffectAnims(): void {
+    for (const anim of this.effectAnims) {
+      switch (anim.type) {
+        case 'guard':
+          this.drawGuardEffect(anim);
+          break;
+        case 'heal':
+          this.drawHealEffect(anim);
+          break;
+        case 'conceal':
+          this.drawConcealEffect(anim);
+          break;
+        case 'disarm':
+          this.drawDisarmEffect(anim);
+          break;
+        case 'doubleAction':
+          this.drawDoubleActionEffect(anim);
+          break;
+        case 'jamming':
+          this.drawJammingEffect(anim);
+          break;
+      }
+      anim.frames--;
+    }
+    this.effectAnims = this.effectAnims.filter((a) => a.frames > 0);
+  }
+
+  /** Guard: 六角形シールドが収縮して展開 */
+  private drawGuardEffect(anim: EffectAnimation): void {
+    const ctx = this.ctx;
+    const cs = this.cellSize;
+    const cx = anim.position.x * cs + cs / 2;
+    const cy = anim.position.y * cs + cs / 2;
+    const t = 1 - anim.frames / anim.totalFrames; // 0→1
+
+    ctx.save();
+    // 収縮: 大→小
+    const maxR = cs * 1.2;
+    const minR = cs * 0.4;
+    const r = maxR - (maxR - minR) * t;
+    // 終盤にフラッシュ
+    const flashAlpha = t > 0.8 ? (1 - (t - 0.8) / 0.2) * 0.4 : 0;
+
+    ctx.strokeStyle = C.ACCENT_GREEN;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = C.ACCENT_GREEN;
+    ctx.shadowBlur = 10;
+    ctx.globalAlpha = 0.3 + 0.7 * t;
+
+    // 六角形描画
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i - Math.PI / 2;
+      const px = cx + r * Math.cos(angle);
+      const py = cy + r * Math.sin(angle);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    // フラッシュ
+    if (flashAlpha > 0) {
+      ctx.fillStyle = C.ACCENT_GREEN;
+      ctx.globalAlpha = flashAlpha;
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  /** Heal: 緑パーティクル上昇 + 「+」マーク */
+  private drawHealEffect(anim: EffectAnimation): void {
+    const ctx = this.ctx;
+    const cs = this.cellSize;
+    const pos = anim.targetPosition ?? anim.position;
+    const cx = pos.x * cs + cs / 2;
+    const cy = pos.y * cs + cs / 2;
+    const t = 1 - anim.frames / anim.totalFrames; // 0→1
+
+    ctx.save();
+    ctx.shadowColor = C.ACCENT_GREEN;
+    ctx.shadowBlur = 8;
+
+    // パーティクル（6個、各々異なるオフセット・速度で上昇）
+    for (let i = 0; i < 6; i++) {
+      const seed = i * 1.37; // 疑似ランダムシード
+      const offsetX = Math.sin(seed * 5) * cs * 0.3;
+      const delay = (i % 3) * 0.1;
+      const localT = Math.max(0, Math.min(1, (t - delay) / (1 - delay)));
+      if (localT <= 0) continue;
+
+      const px = cx + offsetX + Math.sin(localT * 4 + seed) * 4;
+      const py = cy - localT * cs * 0.8;
+      const alpha = (1 - localT) * 0.8;
+      const radius = 2 + (1 - localT) * 2;
+
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = C.ACCENT_GREEN;
+      ctx.beginPath();
+      ctx.arc(px, py, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 「+」マーク（中盤で拡大して消える）
+    const plusT = Math.max(0, Math.min(1, (t - 0.1) / 0.6));
+    if (plusT > 0) {
+      const plusAlpha = plusT < 0.5 ? plusT * 2 : (1 - plusT) * 2;
+      const plusSize = 3 + plusT * 6;
+      ctx.globalAlpha = Math.max(0, plusAlpha) * 0.9;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = C.ACCENT_GREEN;
+      ctx.shadowBlur = 6;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - plusSize);
+      ctx.lineTo(cx, cy + plusSize);
+      ctx.moveTo(cx - plusSize, cy);
+      ctx.lineTo(cx + plusSize, cy);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  /** Conceal: グリッチノイズが上下から閉じる */
+  private drawConcealEffect(anim: EffectAnimation): void {
+    const ctx = this.ctx;
+    const cs = this.cellSize;
+    const cx = anim.position.x * cs + cs / 2;
+    const cy = anim.position.y * cs + cs / 2;
+    const t = 1 - anim.frames / anim.totalFrames; // 0→1
+
+    ctx.save();
+    // 上下からノイズバーが中心に向かって進行
+    const halfH = cs / 2;
+    const topEdge = cy - halfH + halfH * t;
+    const bottomEdge = cy + halfH - halfH * t;
+
+    ctx.globalAlpha = 0.6 * (1 - t * 0.5);
+    for (let row = 0; row < 4; row++) {
+      // 上からのバー
+      const yTop = topEdge - row * 3;
+      if (yTop >= cy - halfH) {
+        const w = 8 + ((row * 17 + anim.frames * 7) % 20);
+        const xOff = ((row * 13 + anim.frames * 3) % 30) - 15;
+        ctx.fillStyle = row % 2 === 0 ? 'rgba(0, 212, 255, 0.5)' : 'rgba(255, 255, 255, 0.3)';
+        ctx.fillRect(cx - w / 2 + xOff, yTop, w, 2);
+      }
+      // 下からのバー
+      const yBot = bottomEdge + row * 3;
+      if (yBot <= cy + halfH) {
+        const w = 8 + ((row * 23 + anim.frames * 11) % 20);
+        const xOff = ((row * 7 + anim.frames * 5) % 30) - 15;
+        ctx.fillStyle = row % 2 === 0 ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 212, 255, 0.5)';
+        ctx.fillRect(cx - w / 2 + xOff, yBot, w, 2);
+      }
+    }
+
+    ctx.restore();
+  }
+
+  /** Disarm: 前方に向かって水平パルス波 */
+  private drawDisarmEffect(anim: EffectAnimation): void {
+    const ctx = this.ctx;
+    const cs = this.cellSize;
+    const cx = anim.position.x * cs + cs / 2;
+    const cy = anim.position.y * cs + cs / 2;
+    const t = 1 - anim.frames / anim.totalFrames; // 0→1
+
+    const dir = anim.team === Team.Player ? 1 : -1;
+    const maxDist = cs * 5; // 敵陣までの距離
+
+    ctx.save();
+    ctx.strokeStyle = C.ACCENT_BLUE;
+    ctx.shadowColor = C.ACCENT_BLUE;
+    ctx.shadowBlur = 8;
+    ctx.lineWidth = 2;
+
+    // 3本の同心半円パルス波
+    for (let i = 0; i < 3; i++) {
+      const waveT = Math.max(0, Math.min(1, (t - i * 0.15) / (1 - i * 0.15)));
+      if (waveT <= 0) continue;
+
+      const dist = waveT * maxDist;
+      const alpha = (1 - waveT) * 0.7;
+      const radius = 10 + dist * 0.3;
+
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      const startAngle = dir > 0 ? -Math.PI / 2 : Math.PI / 2;
+      const endAngle = dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+      ctx.arc(cx + dist * dir, cy, radius, startAngle, endAngle);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  /** DoubleAction: エナジーリンクライン */
+  private drawDoubleActionEffect(anim: EffectAnimation): void {
+    if (!anim.targetPosition) return;
+    const ctx = this.ctx;
+    const cs = this.cellSize;
+    const x1 = anim.position.x * cs + cs / 2;
+    const y1 = anim.position.y * cs + cs / 2;
+    const x2 = anim.targetPosition.x * cs + cs / 2;
+    const y2 = anim.targetPosition.y * cs + cs / 2;
+    const t = 1 - anim.frames / anim.totalFrames; // 0→1
+
+    ctx.save();
+
+    // ライン伸展（0→0.6で到着）
+    const lineT = Math.min(1, t / 0.6);
+    const ex = x1 + (x2 - x1) * lineT;
+    const ey = y1 + (y2 - y1) * lineT;
+
+    ctx.strokeStyle = C.ACCENT_BLUE;
+    ctx.shadowColor = C.ACCENT_BLUE;
+    ctx.shadowBlur = 10;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = t < 0.6 ? 0.8 : 0.8 * (1 - (t - 0.6) / 0.4);
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
+
+    // 先端の輝点
+    if (lineT < 1) {
+      ctx.fillStyle = '#ffffff';
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      ctx.arc(ex, ey, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 到着フラッシュ
+    if (t >= 0.6) {
+      const flashT = (t - 0.6) / 0.4;
+      const flashR = 5 + flashT * cs * 0.3;
+      ctx.globalAlpha = (1 - flashT) * 0.6;
+      ctx.fillStyle = C.ACCENT_BLUE;
+      ctx.beginPath();
+      ctx.arc(x2, y2, flashR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  /** Jamming: 敵陣中央にグリッチノイズ */
+  private drawJammingEffect(anim: EffectAnimation): void {
+    const ctx = this.ctx;
+    const cs = this.cellSize;
+    const t = 1 - anim.frames / anim.totalFrames; // 0→1
+
+    // 敵陣中央を計算（チームに応じて反転）
+    const enemyCenterX =
+      anim.team === Team.Player
+        ? (CONFIG.TERRITORY_X + CONFIG.GRID_COLS) / 2
+        : CONFIG.TERRITORY_X / 2;
+    const centerY = CONFIG.GRID_ROWS / 2;
+    const cx = enemyCenterX * cs;
+    const cy = centerY * cs;
+
+    ctx.save();
+    // ノイズブロック（ランダム横線）
+    const intensity = t < 0.3 ? t / 0.3 : t < 0.7 ? 1 : (1 - t) / 0.3;
+    const blockCount = Math.floor(8 + intensity * 8);
+    const areaW = cs * 4;
+    const areaH = cs * 4;
+
+    for (let i = 0; i < blockCount; i++) {
+      // フレームごとに異なるパターン（疑似ランダム）
+      const seed = i * 31 + anim.frames * 17;
+      const bx = cx - areaW / 2 + (seed % 97) / 97 * areaW;
+      const by = cy - areaH / 2 + ((seed * 13) % 89) / 89 * areaH;
+      const bw = 10 + (seed % 30);
+      const bh = 2 + (seed % 3);
+
+      ctx.globalAlpha = intensity * (0.3 + ((seed * 7) % 50) / 100);
+      ctx.fillStyle = i % 3 === 0 ? C.ACCENT_RED : i % 3 === 1 ? '#ff44ff' : 'rgba(255, 255, 255, 0.5)';
+      ctx.fillRect(bx, by, bw, bh);
+    }
+
+    ctx.restore();
   }
 
   clearHighlights(): void {

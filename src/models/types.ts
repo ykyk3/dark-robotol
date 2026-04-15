@@ -186,7 +186,14 @@ export type GameEvent =
       messages: string[];
     }
   | { type: 'scan'; unitIndex: number; team: Team; center: Position; found: Position[] }
-  | { type: 'assist'; unitIndex: number; team: Team; assistType: AssistType }
+  | {
+      type: 'assist';
+      unitIndex: number;
+      team: Team;
+      assistType: AssistType;
+      position: Position;
+      targetPosition?: Position;
+    }
   | {
       type: 'setDevice';
       unitIndex: number;
@@ -195,8 +202,16 @@ export type GameEvent =
       target: Position;
       weaponId: string;
     }
-  | { type: 'guard'; unitIndex: number; team: Team }
-  | { type: 'heal'; unitIndex: number; team: Team; target: number; amount: number }
+  | { type: 'guard'; unitIndex: number; team: Team; position: Position }
+  | {
+      type: 'heal';
+      unitIndex: number;
+      team: Team;
+      target: number;
+      amount: number;
+      position: Position;
+      targetPosition: Position;
+    }
   | { type: 'destroy'; unitIndex: number; team: Team }
   | { type: 'turnStart'; team: Team }
   | { type: 'turnEnd'; team: Team }
