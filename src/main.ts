@@ -223,6 +223,8 @@ function updateHighlights(): void {
 
   // 配置フェーズ
   if (state.phase === BattlePhase.Deploy) {
+    // 出撃確定待ちでは配置可能セルのハイライトを消す（クリックしても配置されないため）
+    if (state.isDeployReady()) return;
     const deployable = state.getDeployableCells();
     renderer.highlightMoveRange = deployable;
     // カーソル位置が配置可能セルなら、選択中メダロットのゴーストを表示
@@ -279,11 +281,12 @@ function onCanvasClick(e: MouseEvent): void {
 function handleCellClick(cell: Position): void {
   // ── 配置フェーズ ──
   if (state.phase === BattlePhase.Deploy) {
+    // 全員配置済み（出撃確定待ち）ではセルクリックで配置しない
+    if (state.isDeployReady()) return;
     if (!ui.deploySelectedId) return;
     if (state.deployUnit(cell, ui.deploySelectedId)) {
       // 次に配置するメダロットを未配置リストの先頭から自動選択
       ui.deploySelectedId = state.undeployedIds[0] ?? null;
-      if (state.phase !== BattlePhase.Deploy) ui.cursorPos = null;
       updateUI();
     }
     return;
@@ -371,6 +374,11 @@ function onActionSelected(action: ActionSelection): void {
   if (action.kind === 'deploySelect') {
     ui.deploySelectedId = action.medabotId;
     updateUI();
+    return;
+  }
+  // 配置完了 → 出撃確定
+  if (action.kind === 'deployConfirm') {
+    confirmDeploy();
     return;
   }
 
@@ -549,6 +557,14 @@ function selectDeployByIndex(i: number): void {
   updateUI();
 }
 
+/** 配置フェーズ: 全員配置完了後に PlayerTurn へ確定遷移 */
+function confirmDeploy(): void {
+  if (!state.finalizeDeploy()) return;
+  ui.cursorPos = null;
+  ui.deploySelectedId = null;
+  updateUI();
+}
+
 function enterPreview(action: BattleAction): void {
   ui.preview = action;
   ui.previewLabel = undefined;
@@ -699,8 +715,17 @@ function onKeyDown(e: KeyboardEvent): void {
       const undone = state.undoDeploy();
       if (undone) {
         ui.deploySelectedId = undone;
+        // 出撃確定待ち状態から戻した場合、カーソルを復活させる
+        if (!ui.cursorPos) ui.cursorPos = { x: 2, y: 2 };
         updateUI();
       }
+      return;
+    }
+
+    // 全員配置完了 → Enter/Space で出撃確定
+    if (state.isDeployReady() && (key === ' ' || key === 'Enter')) {
+      e.preventDefault();
+      confirmDeploy();
       return;
     }
 

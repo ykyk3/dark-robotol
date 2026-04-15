@@ -15,7 +15,8 @@ export type ActionSelection =
   | { kind: 'confirmPreview' }
   | { kind: 'cancelPreview' }
   | { kind: 'skip' }
-  | { kind: 'deploySelect'; medabotId: string };
+  | { kind: 'deploySelect'; medabotId: string }
+  | { kind: 'deployConfirm' };
 
 const ACTION_TYPE_LABELS: Record<string, string> = {
   こうげき: '攻撃',
@@ -51,14 +52,32 @@ export class ActionMenu {
       heading.className = 'deploy-heading';
       const placed = state.deployIndex;
       const total = state.deployTotal;
-      heading.textContent = `配置 (${placed}/${total}) - 配置順＝行動順`;
+      const ready = state.isDeployReady();
+      heading.textContent = ready
+        ? `配置完了 (${placed}/${total}) - 出撃しますか？`
+        : `配置 (${placed}/${total}) - 配置順＝行動順`;
       this.container.appendChild(heading);
 
       const hint = document.createElement('span');
       hint.className = 'deploy-hint';
-      const numRange = total > 1 ? `1-${total}` : '1';
-      hint.textContent = `選択: Tab / ${numRange} ・ 配置: 方向キー+Enter ・ 戻す: Esc`;
+      if (ready) {
+        hint.textContent = '出撃: Enter ・ 直前を戻す: Esc';
+      } else {
+        const numRange = total > 1 ? `1-${total}` : '1';
+        hint.textContent = `選択: Tab / ${numRange} ・ 配置: 方向キー+Enter ・ 戻す: Esc`;
+      }
       this.container.appendChild(hint);
+
+      if (ready) {
+        // 出撃確定ボタン
+        const confirmWrap = document.createElement('div');
+        confirmWrap.className = 'deploy-select';
+        this.addButton('▶ 出撃', { kind: 'deployConfirm' }, confirmWrap);
+        const last = confirmWrap.lastElementChild as HTMLElement | null;
+        last?.classList.add('selected');
+        this.container.appendChild(confirmWrap);
+        return;
+      }
 
       const list = document.createElement('div');
       list.className = 'deploy-select';

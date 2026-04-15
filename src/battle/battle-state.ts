@@ -107,12 +107,25 @@ export class BattleState {
     if (!def) return false;
     this.playerTeam.push(createMedabot(def, pos, Team.Player));
     this.undeployedIds.splice(idx, 1);
-
-    if (this.undeployedIds.length === 0) {
-      this.phase = BattlePhase.PlayerTurn;
-      this.startTurn(Team.Player);
-    }
+    // 全員配置完了しても Deploy のままにし、finalizeDeploy() で明示的に確定する
+    // （最後の1体の配置も Esc で取り消せるようにするため）
     return true;
+  }
+
+  /**
+   * 全員配置完了 → PlayerTurn へ確定遷移。未配置が残っていれば false。
+   */
+  finalizeDeploy(): boolean {
+    if (this.phase !== BattlePhase.Deploy) return false;
+    if (this.undeployedIds.length > 0) return false;
+    this.phase = BattlePhase.PlayerTurn;
+    this.startTurn(Team.Player);
+    return true;
+  }
+
+  /** 全員配置済みだが出撃確定前の状態か */
+  isDeployReady(): boolean {
+    return this.phase === BattlePhase.Deploy && this.undeployedIds.length === 0;
   }
 
   /**
