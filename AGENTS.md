@@ -78,7 +78,7 @@ onActionSelected() → pendingAction設定 → ハイライト表示
 武器の `blastShape` によりターゲティング方式が分岐する:
 
 - **手動照準** (`blastShape` なし): セルをクリックして単体/十字/3x3 (`blastArea` で決定)
-- **自動照準** (`same_col`/`mirror_col`/`front4`/`vertical_line`): セル選択不要、即プレビュー
+- **自動照準** (`same_col`/`mirror_col`/`front2`/`front4`/`vertical_line`): セル選択不要、即プレビュー
 - **pick3**: 3セルを順に選択 → `pickTargets` に蓄積 → 3つ揃うと自動プレビュー
 
 ### 戦闘システムの核心

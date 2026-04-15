@@ -53,7 +53,7 @@ onActionSelected() → pendingAction設定 → ハイライト
 武器の `blastShape` で分岐:
 
 - **手動照準**（`blastShape` なし）: クリック選択 → `blastArea` で単体/十字/3x3
-- **自動照準**（`same_col`/`mirror_col`/`front4`/`vertical_line`）: 即プレビュー
+- **自動照準**（`same_col`/`mirror_col`/`front2`/`front4`/`vertical_line`）: 即プレビュー
 - **pick3**: 3セル順次選択 → 揃うと自動プレビュー
 
 ### 索敵（Fog of War）
@@ -71,5 +71,3 @@ onActionSelected() → pendingAction設定 → ハイライト
 ### データ層
 
 `medabots.json` / `parts.json` / `weapons.json` を `*-db.ts` が型付きで直接エクスポート（変換処理なし）。
-
-詳細は AGENTS.md 参照。
