@@ -199,30 +199,30 @@
 
   "legs_bipedal": {
     "id": "legs_bipedal", "name": "バイペダル", "slot": "legs",
-    "legType": "bipedal", "moveRange": 3, "evasion": 15, "defense": 6, "description": "バランス型"
+    "legType": "bipedal", "evasion": 15, "defense": 6, "description": "バランス型"
   },
   "legs_hover": {
     "id": "legs_hover", "name": "ホバー", "slot": "legs",
-    "legType": "hover", "moveRange": 4, "evasion": 25, "defense": 3, "description": "高速・高回避"
+    "legType": "hover", "evasion": 25, "defense": 3, "description": "高速・高回避"
   },
   "legs_tank": {
     "id": "legs_tank", "name": "タンク", "slot": "legs",
-    "legType": "tank", "moveRange": 2, "evasion": 5, "defense": 12, "description": "鈍足・高装甲"
+    "legType": "tank", "evasion": 5, "defense": 12, "description": "鈍足・高装甲"
   },
   "legs_multi": {
     "id": "legs_multi", "name": "マルチレッグ", "slot": "legs",
-    "legType": "multiLeg", "moveRange": 3, "evasion": 20, "defense": 8, "description": "多脚型"
+    "legType": "multiLeg", "evasion": 20, "defense": 8, "description": "多脚型"
   },
   "legs_flight": {
     "id": "legs_flight", "name": "フライト", "slot": "legs",
-    "legType": "flight", "moveRange": 4, "evasion": 30, "defense": 2, "description": "最高回避"
+    "legType": "flight", "evasion": 30, "defense": 2, "description": "最高回避"
   },
   "legs_vehicle": {
     "id": "legs_vehicle", "name": "タイヤ", "slot": "legs",
-    "legType": "vehicle", "moveRange": 5, "evasion": 15, "defense": 5, "description": "最速移動"
+    "legType": "vehicle", "evasion": 15, "defense": 5, "description": "最速移動"
   },
   "legs_deathcrawler": {
     "id": "legs_deathcrawler", "name": "デスクローラー", "slot": "legs",
-    "legType": "multiLeg", "moveRange": 3, "evasion": 10, "defense": 14, "description": "最高装甲の多脚"
+    "legType": "multiLeg", "evasion": 10, "defense": 14, "description": "最高装甲の多脚"
   }
 }

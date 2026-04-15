@@ -10,7 +10,7 @@ import {
   PartDef,
   WeaponDef,
 } from '../models/types';
-import { createMedabot, isAlive, getPartBySlot, getMoveRange } from '../models/medabot';
+import { createMedabot, isAlive, getPartBySlot } from '../models/medabot';
 import { MEDABOTS } from '../data/medabots-db';
 import { getWeapon } from '../data/weapons-db';
 import {
@@ -168,11 +168,11 @@ export class BattleState {
     return true;
   }
 
-  /** 移動可能マス（脚部 moveRange に応じる） */
+  /** 移動可能マス（隣接1マス） */
   getMovableForCurrent(): Position[] {
     const unit = this.getCurrentUnit();
     if (!unit) return [];
-    return getMovablePositions(unit, this.getAllBots(), getMoveRange(unit));
+    return getMovablePositions(unit, this.getAllBots());
   }
 
   getTargetsForPart(part: PartDef): Position[] {

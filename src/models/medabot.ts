@@ -62,10 +62,6 @@ export function totalDefense(bot: MedabotState): number {
   return base + guardBonus;
 }
 
-export function getMoveRange(bot: MedabotState): number {
-  return bot.parts.legs.moveRange ?? 2;
-}
-
 export function getEvasion(bot: MedabotState): number {
   return bot.parts.legs.evasion ?? 0;
 }

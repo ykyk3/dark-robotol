@@ -39,11 +39,7 @@ export function getEnemyTerritoryCells(team: Team): Position[] {
 
 // ── 移動 ──
 
-export function getMovablePositions(
-  bot: MedabotState,
-  allBots: MedabotState[],
-  moveRange: number,
-): Position[] {
+export function getMovablePositions(bot: MedabotState, allBots: MedabotState[]): Position[] {
   const occupied = new Set(
     allBots
       .filter((b) => b.currentHp > 0 && b !== bot)
@@ -55,8 +51,7 @@ export function getMovablePositions(
     for (let y = 0; y < CONFIG.GRID_ROWS; y++) {
       const p = { x, y };
       if (
-        manhattan(bot.position, p) <= moveRange &&
-        manhattan(bot.position, p) > 0 &&
+        manhattan(bot.position, p) === 1 &&
         !occupied.has(`${x},${y}`) &&
         isInTerritory(p, bot.team)
       ) {
