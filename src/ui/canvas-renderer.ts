@@ -214,14 +214,12 @@ export class CanvasRenderer {
 
   private drawDeployGhost(): void {
     if (!this.deployGhost) return;
-    const ctx = this.ctx;
     const cs = this.cellSize;
     const cx = this.deployGhost.position.x * cs + cs / 2;
     const cy = this.deployGhost.position.y * cs + cs / 2;
-    ctx.save();
-    ctx.globalAlpha = 0.5;
-    this.drawBot(cx, cy, C.PLAYER_UNIT, this.deployGhost.label, false, 1);
-    ctx.restore();
+    // drawBot は内部で globalAlpha を直接セットするため、
+    // alpha 引数自体に 0.5 を渡して半透明化する
+    this.drawBot(cx, cy, C.PLAYER_UNIT, this.deployGhost.label, false, 0.5);
   }
 
   private drawDestroyedMarker(cx: number, cy: number, color: string): void {

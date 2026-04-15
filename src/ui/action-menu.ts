@@ -56,7 +56,8 @@ export class ActionMenu {
 
       const hint = document.createElement('span');
       hint.className = 'deploy-hint';
-      hint.textContent = '選択: Tab / 1-3 ・ 配置: 方向キー+Enter ・ 戻す: Esc';
+      const numRange = total > 1 ? `1-${total}` : '1';
+      hint.textContent = `選択: Tab / ${numRange} ・ 配置: 方向キー+Enter ・ 戻す: Esc`;
       this.container.appendChild(hint);
 
       const list = document.createElement('div');

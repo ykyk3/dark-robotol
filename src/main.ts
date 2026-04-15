@@ -686,9 +686,12 @@ function onKeyDown(e: KeyboardEvent): void {
       return;
     }
     if (key >= '1' && key <= '9') {
-      e.preventDefault();
-      selectDeployByIndex(Number(key) - 1);
-      return;
+      const n = Number(key);
+      if (n <= state.deployTotal) {
+        e.preventDefault();
+        selectDeployByIndex(n - 1);
+        return;
+      }
     }
     // 直前に配置した1体を取り消し
     if (key === 'Escape') {
