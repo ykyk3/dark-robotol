@@ -44,7 +44,11 @@ export class BattleState {
 
   // 配置フェーズ
   private playerDefs: string[] = [];
-  deployIndex = 0;
+  /** 未配置のメダロットID（配置するたびに減る） */
+  undeployedIds: string[] = [];
+  get deployIndex(): number {
+    return this.playerTeam.length;
+  }
   get deployTotal(): number {
     return this.playerDefs.length;
   }
@@ -65,16 +69,16 @@ export class BattleState {
     // プレイヤーは配置フェーズで配置
     this.playerTeam = [];
     this.playerDefs = playerIds;
-    this.deployIndex = 0;
+    this.undeployedIds = [...playerIds];
 
     this.phase = BattlePhase.Deploy;
   }
 
   // ── 配置フェーズ ──
 
-  getDeployingUnitName(): string | null {
-    if (this.deployIndex >= this.playerDefs.length) return null;
-    return MEDABOTS[this.playerDefs[this.deployIndex]]?.name ?? null;
+  /** 未配置メダロットIDから表示名を取得 */
+  getMedabotName(id: string): string | null {
+    return MEDABOTS[id]?.name ?? null;
   }
 
   getDeployableCells(): Position[] {
@@ -88,21 +92,40 @@ export class BattleState {
     return cells;
   }
 
-  deployUnit(pos: Position): boolean {
+  /**
+   * 指定したメダロットを指定位置に配置する。
+   * 配置順がそのまま playerTeam の配列順（＝行動順）になる。
+   */
+  deployUnit(pos: Position, medabotId: string): boolean {
     if (this.phase !== BattlePhase.Deploy) return false;
-    if (this.deployIndex >= this.playerDefs.length) return false;
+    const idx = this.undeployedIds.indexOf(medabotId);
+    if (idx < 0) return false;
     if (!isInTerritory(pos, Team.Player)) return false;
     if (this.playerTeam.some((u) => posEqual(u.position, pos))) return false;
 
-    const def = MEDABOTS[this.playerDefs[this.deployIndex]];
+    const def = MEDABOTS[medabotId];
+    if (!def) return false;
     this.playerTeam.push(createMedabot(def, pos, Team.Player));
-    this.deployIndex++;
+    this.undeployedIds.splice(idx, 1);
 
-    if (this.deployIndex >= this.playerDefs.length) {
+    if (this.undeployedIds.length === 0) {
       this.phase = BattlePhase.PlayerTurn;
       this.startTurn(Team.Player);
     }
     return true;
+  }
+
+  /**
+   * 直前に配置した1体を取り消し、未配置リストの先頭に戻す。
+   * 戻り値は取り消したメダロットID。失敗時は null。
+   */
+  undoDeploy(): string | null {
+    if (this.phase !== BattlePhase.Deploy) return null;
+    const unit = this.playerTeam.pop();
+    if (!unit) return null;
+    const id = unit.def.id;
+    this.undeployedIds.unshift(id);
+    return id;
   }
 
   // ── ターン管理 ──

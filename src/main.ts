@@ -48,6 +48,8 @@ const ui = {
   pickPartSlot: null as PartSlot | null,
   // アニメーション完了後に表示するメッセージ
   pendingMessages: [] as string[],
+  // 配置フェーズで次に配置するメダロットID
+  deploySelectedId: null as string | null,
 };
 
 // eventBus リスナー解除関数
@@ -163,6 +165,8 @@ function startBattle(): void {
   clearInputState();
   ui.cursorPos = { x: 2, y: 2 };
   ui.aiRunning = false;
+  // 最初は未配置リストの先頭を選択（好きな順で変更可能）
+  ui.deploySelectedId = state.undeployedIds[0] ?? null;
   updateUI();
 }
 
@@ -189,7 +193,7 @@ function updateUI(): void {
   const preview = ui.preview
     ? { cells: ui.previewCells.length, type: ui.previewType, label: ui.previewLabel }
     : undefined;
-  actionMenu.render(state, targeting, preview, ui.pending);
+  actionMenu.render(state, targeting, preview, ui.pending, ui.deploySelectedId);
   updateHighlights();
 
   const el = document.querySelector('#battle-header .turn-info');
@@ -205,6 +209,7 @@ function updateUI(): void {
 function updateHighlights(): void {
   renderer.clearHighlights();
   renderer.cursorCell = ui.cursorPos;
+  renderer.deployGhost = null;
 
   // プレビュー中
   if (ui.preview && ui.previewCells.length > 0) {
@@ -218,7 +223,18 @@ function updateHighlights(): void {
 
   // 配置フェーズ
   if (state.phase === BattlePhase.Deploy) {
-    renderer.highlightMoveRange = state.getDeployableCells();
+    const deployable = state.getDeployableCells();
+    renderer.highlightMoveRange = deployable;
+    // カーソル位置が配置可能セルなら、選択中メダロットのゴーストを表示
+    if (ui.cursorPos && ui.deploySelectedId) {
+      const onDeployable = deployable.some((p) => posEqual(p, ui.cursorPos!));
+      if (onDeployable) {
+        const name = state.getMedabotName(ui.deploySelectedId);
+        if (name) {
+          renderer.deployGhost = { position: ui.cursorPos, label: name[0] };
+        }
+      }
+    }
     return;
   }
 
@@ -263,7 +279,10 @@ function onCanvasClick(e: MouseEvent): void {
 function handleCellClick(cell: Position): void {
   // ── 配置フェーズ ──
   if (state.phase === BattlePhase.Deploy) {
-    if (state.deployUnit(cell)) {
+    if (!ui.deploySelectedId) return;
+    if (state.deployUnit(cell, ui.deploySelectedId)) {
+      // 次に配置するメダロットを未配置リストの先頭から自動選択
+      ui.deploySelectedId = state.undeployedIds[0] ?? null;
       if (state.phase !== BattlePhase.Deploy) ui.cursorPos = null;
       updateUI();
     }
@@ -348,6 +367,13 @@ function buildCellAction(
 }
 
 function onActionSelected(action: ActionSelection): void {
+  // 配置フェーズのメダロット選択は ui.pending を汚さずに処理
+  if (action.kind === 'deploySelect') {
+    ui.deploySelectedId = action.medabotId;
+    updateUI();
+    return;
+  }
+
   ui.pending = action;
 
   switch (action.kind) {
@@ -504,6 +530,25 @@ function moveCursor(dx: number, dy: number): void {
   }
 }
 
+/** 配置フェーズ: 未配置メダロットを循環選択 (dir=+1で次、-1で前) */
+function cycleDeploySelection(dir: 1 | -1): void {
+  const ids = state.undeployedIds;
+  if (ids.length === 0) return;
+  const current = ui.deploySelectedId;
+  const idx = current ? ids.indexOf(current) : -1;
+  const next = idx < 0 ? 0 : (idx + dir + ids.length) % ids.length;
+  ui.deploySelectedId = ids[next];
+  updateUI();
+}
+
+/** 配置フェーズ: 未配置メダロットリストの N番目を直接選択 (0-indexed) */
+function selectDeployByIndex(i: number): void {
+  const ids = state.undeployedIds;
+  if (i < 0 || i >= ids.length) return;
+  ui.deploySelectedId = ids[i];
+  updateUI();
+}
+
 function enterPreview(action: BattleAction): void {
   ui.preview = action;
   ui.previewLabel = undefined;
@@ -634,6 +679,28 @@ function onKeyDown(e: KeyboardEvent): void {
 
   // ── 配置フェーズ ──
   if (state.phase === BattlePhase.Deploy) {
+    // メダロット選択（カーソル有無に関係なく動作）
+    if (key === 'Tab') {
+      e.preventDefault();
+      cycleDeploySelection(e.shiftKey ? -1 : 1);
+      return;
+    }
+    if (key >= '1' && key <= '9') {
+      e.preventDefault();
+      selectDeployByIndex(Number(key) - 1);
+      return;
+    }
+    // 直前に配置した1体を取り消し
+    if (key === 'Escape') {
+      e.preventDefault();
+      const undone = state.undoDeploy();
+      if (undone) {
+        ui.deploySelectedId = undone;
+        updateUI();
+      }
+      return;
+    }
+
     if (!ui.cursorPos) return;
     switch (key) {
       case 'ArrowUp':
