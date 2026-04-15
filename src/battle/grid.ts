@@ -46,17 +46,17 @@ export function getMovablePositions(bot: MedabotState, allBots: MedabotState[]):
       .map((b) => `${b.position.x},${b.position.y}`),
   );
 
+  const deltas = [
+    [0, -1],
+    [0, 1],
+    [-1, 0],
+    [1, 0],
+  ];
   const result: Position[] = [];
-  for (let x = 0; x < CONFIG.GRID_COLS; x++) {
-    for (let y = 0; y < CONFIG.GRID_ROWS; y++) {
-      const p = { x, y };
-      if (
-        manhattan(bot.position, p) === 1 &&
-        !occupied.has(`${x},${y}`) &&
-        isInTerritory(p, bot.team)
-      ) {
-        result.push(p);
-      }
+  for (const [dx, dy] of deltas) {
+    const p = { x: bot.position.x + dx, y: bot.position.y + dy };
+    if (inBounds(p) && !occupied.has(`${p.x},${p.y}`) && isInTerritory(p, bot.team)) {
+      result.push(p);
     }
   }
   return result;
