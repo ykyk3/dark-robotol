@@ -120,7 +120,6 @@ export interface PartDef {
 
   // 脚部
   legType?: LegType;
-  moveRange?: number;
   evasion?: number;
 }
 

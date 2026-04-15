@@ -8,7 +8,7 @@ import {
   Team,
 } from '../models/types';
 import { moveAction, attackAction, guardAction, skipAction } from '../models/action';
-import { isAlive, canUseHead, getMoveRange } from '../models/medabot';
+import { isAlive, canUseHead } from '../models/medabot';
 import {
   getMovablePositions,
   posEqual,
@@ -40,9 +40,9 @@ function planUnitActions(state: BattleState): BattleAction[] {
   const visible = getVisiblePlayers(state);
   const actions: BattleAction[] = [];
 
-  // ── 1) 移動（脚部 moveRange に応じる） ──
+  // ── 1) 移動（隣接1マス） ──
   if (!state.preMovePosition) {
-    const movable = getMovablePositions(unit, state.getAllBots(), getMoveRange(unit));
+    const movable = getMovablePositions(unit, state.getAllBots());
     if (movable.length > 0) {
       if (visible.length > 0) {
         let bestPos = unit.position;
