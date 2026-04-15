@@ -25,6 +25,7 @@ import {
 } from './grid';
 import { calcDamage } from './damage-calc';
 import { VisibilityManager } from './visibility';
+import { planEnemyPositions } from './enemy-placement';
 import { eventBus } from '../utils/event-bus';
 
 export class BattleState {
@@ -55,11 +56,11 @@ export class BattleState {
     this.turnCount = 0;
     this.preMovePosition = null;
 
-    // 敵は自動配置（右端列＝後列）
-    this.enemyTeam = enemyIds.map((id, i) => {
-      const def = MEDABOTS[id];
-      return createMedabot(def, { x: CONFIG.GRID_COLS - 1, y: 1 + i }, Team.Enemy);
-    });
+    // 敵は役割ベースのランダム配置
+    const enemyPositions = planEnemyPositions(enemyIds);
+    this.enemyTeam = enemyIds.map((id, i) =>
+      createMedabot(MEDABOTS[id], enemyPositions[i], Team.Enemy),
+    );
 
     // プレイヤーは配置フェーズで配置
     this.playerTeam = [];
