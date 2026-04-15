@@ -78,7 +78,7 @@ function planUnitActions(state: BattleState): BattleAction[] {
   }
 
   // ── 3) 攻撃 ──
-  const attackAct = planAttack(unit, idx, visible);
+  const attackAct = planAttack(unit, idx, visible, state);
   if (attackAct) {
     actions.push(attackAct);
     return actions;
@@ -104,6 +104,7 @@ function planAttack(
   unit: MedabotState,
   idx: number,
   visible: { unit: MedabotState; index: number }[],
+  state: BattleState,
 ): BattleAction | null {
   for (const slot of [PartSlot.RightArm, PartSlot.LeftArm, PartSlot.Head]) {
     const part =
@@ -121,10 +122,21 @@ function planAttack(
     if (unit.jammedPartSlot === slot) continue;
 
     if (actionType === 'しかける') {
-      // 敵陣最前列（自陣側から見た前線）にトラップ設置
+      // 敵陣最前列（自陣側から見た前線）にトラップ設置。
+      // 全ユニット・チーム問わず既設トラップのあるマスは避ける
       const frontX = CONFIG.TERRITORY_X;
-      const trapTargets = [];
-      for (let y = 0; y < CONFIG.GRID_ROWS; y++) trapTargets.push({ x: frontX, y });
+      const occupied = new Set<string>();
+      for (const u of [...state.enemyTeam, ...state.playerTeam]) {
+        if (isAlive(u)) occupied.add(`${u.position.x},${u.position.y}`);
+      }
+      for (const t of state.traps) {
+        occupied.add(`${t.position.x},${t.position.y}`);
+      }
+      const trapTargets: { x: number; y: number }[] = [];
+      for (let y = 0; y < CONFIG.GRID_ROWS; y++) {
+        if (!occupied.has(`${frontX},${y}`)) trapTargets.push({ x: frontX, y });
+      }
+      if (trapTargets.length === 0) continue; // 置ける場所が無ければ他の武器へ
       return {
         kind: ActionKind.SetDevice,
         unitIndex: idx,
