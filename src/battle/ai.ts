@@ -123,14 +123,14 @@ function planAttack(
 
     if (actionType === 'しかける') {
       // 敵陣最前列（自陣側から見た前線）にトラップ設置。
-      // 敵ユニットや既設トラップがある位置は避ける
+      // 全ユニット・チーム問わず既設トラップのあるマスは避ける
       const frontX = CONFIG.TERRITORY_X;
       const occupied = new Set<string>();
-      for (const u of state.enemyTeam) {
+      for (const u of [...state.enemyTeam, ...state.playerTeam]) {
         if (isAlive(u)) occupied.add(`${u.position.x},${u.position.y}`);
       }
       for (const t of state.traps) {
-        if (t.team === Team.Enemy) occupied.add(`${t.position.x},${t.position.y}`);
+        occupied.add(`${t.position.x},${t.position.y}`);
       }
       const trapTargets: { x: number; y: number }[] = [];
       for (let y = 0; y < CONFIG.GRID_ROWS; y++) {

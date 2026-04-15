@@ -2,7 +2,7 @@ import { CONFIG } from '../config';
 import { Position } from '../models/types';
 import { MEDABOTS } from '../data/medabots-db';
 import { PARTS } from '../data/parts-db';
-import { WEAPONS } from '../data/weapons-db';
+import { getWeapon } from '../data/weapons-db';
 import { pick, shuffle } from '../utils/random';
 
 type Role = 'melee' | 'support' | 'ranged';
@@ -19,7 +19,7 @@ function classifyRole(medabotId: string): Role {
   // 前衛判定: 腕に近接武器
   const armParts = [PARTS[def.rightArm], PARTS[def.leftArm]].filter((p) => !!p);
   const hasMelee = armParts.some((p) => {
-    const w = p.weaponType ? WEAPONS[p.weaponType] : undefined;
+    const w = p.weaponType ? getWeapon(p.weaponType) : undefined;
     return w?.category === 'melee';
   });
   if (hasMelee) return 'melee';
