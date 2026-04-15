@@ -31,14 +31,35 @@ function classifyRole(medabotId: string): Role {
   return 'ranged';
 }
 
+function assertNever(value: never): never {
+  throw new Error(`Unhandled role: ${String(value)}`);
+}
+
 function preferredColumns(role: Role): number[] {
+  const front = CONFIG.TERRITORY_X;
+  const back = CONFIG.GRID_COLS - 1;
+
+  // 敵陣全体（フォールバック用）
+  const all: number[] = [];
+  for (let x = front; x <= back; x++) all.push(x);
+
+  const inBounds = (xs: number[]) => {
+    const unique = [...new Set(xs.filter((x) => x >= front && x <= back))];
+    return unique.length > 0 ? unique : all;
+  };
+
   switch (role) {
     case 'melee':
-      return [5, 6];
+      // 最前線2列
+      return inBounds([front, front + 1]);
     case 'support':
-      return [8, 9];
+      // 最後尾2列
+      return inBounds([back - 1, back]);
     case 'ranged':
-      return [6, 7, 8];
+      // 中央帯（前線の1つ奥～最後尾の1つ手前）
+      return inBounds([front + 1, front + 2, back - 1]);
+    default:
+      return assertNever(role);
   }
 }
 
