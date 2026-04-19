@@ -703,7 +703,8 @@ function onKeyDown(e: KeyboardEvent): void {
     }
     if (key >= '1' && key <= '9') {
       const n = Number(key);
-      if (n <= state.deployTotal) {
+      // 未配置リストの範囲内のキーのみ吸収する（範囲外は素通り）
+      if (n <= state.undeployedIds.length) {
         e.preventDefault();
         selectDeployByIndex(n - 1);
         return;

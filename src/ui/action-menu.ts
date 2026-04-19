@@ -63,7 +63,9 @@ export class ActionMenu {
       if (ready) {
         hint.textContent = '出撃: Enter ・ 直前を戻す: Esc';
       } else {
-        const numRange = total > 1 ? `1-${total}` : '1';
+        // 数字キーはボタン列挙（未配置リスト）と対応するため undeployedIds.length で範囲を決める
+        const undeployedCount = state.undeployedIds.length;
+        const numRange = undeployedCount > 1 ? `1-${undeployedCount}` : '1';
         hint.textContent = `選択: Tab / ${numRange} ・ 配置: 方向キー+Enter ・ 戻す: Esc`;
       }
       this.container.appendChild(hint);
