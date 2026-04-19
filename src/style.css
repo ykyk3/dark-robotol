@@ -343,6 +343,36 @@ body {
   cursor: default;
 }
 
+/* 配置フェーズ */
+.deploy-heading {
+  color: var(--accent-green);
+  padding: 4px;
+  font-weight: bold;
+  width: 100%;
+}
+
+.deploy-hint {
+  color: var(--text-dim);
+  padding: 0 4px 4px;
+  font-size: 11px;
+  width: 100%;
+}
+
+.deploy-select {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px;
+  width: 100%;
+}
+
+#action-menu .deploy-select .action-btn.selected {
+  border: 2px solid var(--accent-green);
+  background: rgba(57, 255, 20, 0.15);
+  color: var(--accent-green);
+  padding: 5px 13px; /* border 1px増加分を相殺 */
+}
+
 /* メッセージログ */
 #message-log-wrapper {
   position: relative;
