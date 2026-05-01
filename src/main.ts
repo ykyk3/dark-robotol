@@ -535,6 +535,10 @@ function moveCursor(dx: number, dy: number): void {
   if (nx >= 0 && nx < CONFIG.GRID_COLS && ny >= 0 && ny < CONFIG.GRID_ROWS) {
     ui.cursorPos = { x: nx, y: ny };
     renderer.cursorCell = ui.cursorPos;
+    // 配置フェーズではゴースト位置がカーソルに追従するため再計算が必要
+    if (state.phase === BattlePhase.Deploy) {
+      updateHighlights();
+    }
   }
 }
 
