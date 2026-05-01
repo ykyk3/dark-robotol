@@ -59,6 +59,9 @@ export class BattleState {
     this.traps = [];
     this.turnCount = 0;
     this.preMovePosition = null;
+    // リトライ時に前回の値を引きずらないよう明示リセット
+    this.currentUnitIndex = 0;
+    this.unitPhase = 'move';
 
     // 敵は役割ベースのランダム配置
     const enemyPositions = planEnemyPositions(enemyIds);
