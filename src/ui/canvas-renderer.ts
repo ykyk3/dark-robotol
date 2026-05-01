@@ -35,6 +35,8 @@ export class CanvasRenderer {
   highlightSelected: Position[] = [];
   selectedCell: Position | null = null;
   cursorCell: Position | null = null;
+  /** 配置フェーズで「これから置くメダロット」をカーソル位置に半透明表示するためのゴースト */
+  deployGhost: { position: Position; label: string } | null = null;
 
   private flashEffects: { pos: Position[]; color: string; frames: number }[] = [];
   private scanEffects: {
@@ -70,6 +72,7 @@ export class CanvasRenderer {
     this.drawScanEffect();
     this.drawTraps(state);
     this.drawUnits(state);
+    this.drawDeployGhost();
     this.drawMoveAnim();
     this.drawWeaponAnim();
     this.drawEffectAnims();
@@ -207,6 +210,16 @@ export class CanvasRenderer {
     ctx.textBaseline = 'middle';
     ctx.fillText(label, cx, cy);
     ctx.restore();
+  }
+
+  private drawDeployGhost(): void {
+    if (!this.deployGhost) return;
+    const cs = this.cellSize;
+    const cx = this.deployGhost.position.x * cs + cs / 2;
+    const cy = this.deployGhost.position.y * cs + cs / 2;
+    // drawBot は内部で globalAlpha を直接セットするため、
+    // alpha 引数自体に 0.5 を渡して半透明化する
+    this.drawBot(cx, cy, C.PLAYER_UNIT, this.deployGhost.label, false, 0.5);
   }
 
   private drawDestroyedMarker(cx: number, cy: number, color: string): void {
@@ -799,6 +812,7 @@ export class CanvasRenderer {
     this.highlightSelected = [];
     this.selectedCell = null;
     this.cursorCell = null;
+    this.deployGhost = null;
   }
 
   getCellFromPixel(px: number, py: number): Position | null {

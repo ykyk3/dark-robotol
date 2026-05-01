@@ -14,7 +14,9 @@ export type ActionSelection =
   | { kind: 'move' }
   | { kind: 'confirmPreview' }
   | { kind: 'cancelPreview' }
-  | { kind: 'skip' };
+  | { kind: 'skip' }
+  | { kind: 'deploySelect'; medabotId: string }
+  | { kind: 'deployConfirm' };
 
 const ACTION_TYPE_LABELS: Record<string, string> = {
   こうげき: '攻撃',
@@ -39,17 +41,61 @@ export class ActionMenu {
     targeting?: { pickProgress?: { current: number; max: number }; moveMode?: boolean },
     preview?: { cells: number; type: 'attack' | 'scan' | 'support'; label?: string },
     activeAction?: ActionSelection | null,
+    deploySelectedId?: string | null,
   ): void {
     this.container.innerHTML = '';
     this.currentSelection = activeAction ?? null;
 
     // ── 配置フェーズ ──
     if (state.phase === BattlePhase.Deploy) {
-      const name = state.getDeployingUnitName();
-      const span = document.createElement('span');
-      span.style.cssText = 'color: var(--accent-green); padding: 4px;';
-      span.textContent = `配置: ${name} (${state.deployIndex + 1}/${state.deployTotal})`;
-      this.container.appendChild(span);
+      const heading = document.createElement('span');
+      heading.className = 'deploy-heading';
+      const placed = state.deployIndex;
+      const total = state.deployTotal;
+      const ready = state.isDeployReady();
+      heading.textContent = ready
+        ? `配置完了 (${placed}/${total}) - 出撃しますか？`
+        : `配置 (${placed}/${total}) - 配置順＝行動順`;
+      this.container.appendChild(heading);
+
+      const hint = document.createElement('span');
+      hint.className = 'deploy-hint';
+      if (ready) {
+        hint.textContent = '出撃: Enter ・ 直前を戻す: Esc';
+      } else {
+        // 数字キーはボタン列挙（未配置リスト）と対応するため undeployedIds.length で範囲を決める
+        const undeployedCount = state.undeployedIds.length;
+        const numRange = undeployedCount > 1 ? `1-${undeployedCount}` : '1';
+        hint.textContent = `選択: Tab / ${numRange} ・ 配置: 方向キー+Enter ・ 戻す: Esc`;
+      }
+      this.container.appendChild(hint);
+
+      if (ready) {
+        // 出撃確定ボタン
+        const confirmWrap = document.createElement('div');
+        confirmWrap.className = 'deploy-select';
+        this.addButton('▶ 出撃', { kind: 'deployConfirm' }, confirmWrap);
+        const last = confirmWrap.lastElementChild as HTMLElement | null;
+        last?.classList.add('selected');
+        this.container.appendChild(confirmWrap);
+        return;
+      }
+
+      const list = document.createElement('div');
+      list.className = 'deploy-select';
+
+      state.undeployedIds.forEach((id, i) => {
+        const name = state.getMedabotName(id) ?? id;
+        const nextNo = state.deployIndex + 1;
+        const isSel = id === deploySelectedId;
+        const label = isSel ? `▶ ${i + 1}. ${name} (${nextNo}番手)` : `${i + 1}. ${name}`;
+        this.addButton(label, { kind: 'deploySelect', medabotId: id }, list);
+        if (isSel) {
+          const last = list.lastElementChild as HTMLElement | null;
+          last?.classList.add('selected');
+        }
+      });
+      this.container.appendChild(list);
       return;
     }
 
@@ -255,7 +301,7 @@ export class ActionMenu {
     parent.appendChild(btn);
   }
 
-  private addButton(label: string, action: ActionSelection): void {
+  private addButton(label: string, action: ActionSelection, parent?: HTMLElement): void {
     const btn = document.createElement('button');
     btn.className = 'action-btn';
     btn.textContent = label;
@@ -265,6 +311,6 @@ export class ActionMenu {
       this.currentSelection = action;
       this.onSelect(action);
     });
-    this.container.appendChild(btn);
+    (parent ?? this.container).appendChild(btn);
   }
 }
